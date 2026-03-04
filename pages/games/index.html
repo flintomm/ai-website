@@ -309,6 +309,24 @@
 
       code { color: var(--muted); }
 
+      /* ===== TECH STRIP ===== */
+      .tech-strip {
+        padding: 0.55rem clamp(1.5rem, 4vw, 3rem);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .tech-strip span {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 0.22rem 0.5rem;
+      }
+
       @media (max-width: 980px) {
         main { grid-template-columns: 1fr; }
         .site-nav { padding: 1rem 1.2rem; }
@@ -336,6 +354,10 @@
       </div>
       <div class="note">Tip: Select a tower, then click on the map.</div>
     </header>
+
+    <div class="tech-strip">
+      <span>Canvas API</span><span>Pathfinding AI</span><span>Wave Engine</span><span>Vanilla JS</span>
+    </div>
 
     <main>
       <section class="panel game-wrap">

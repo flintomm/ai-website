@@ -368,8 +368,33 @@
       font-size: 0.85rem;
     }
 
+    .work-dropdown-menu a { align-items: flex-start; }
     .work-dropdown-menu a:hover { background: #fff; color: #000; }
     .work-dropdown-menu a:hover::after { opacity: 1; }
+    .work-dropdown-menu a:hover .work-desc { color: rgba(0,0,0,0.5); }
+
+    .work-item-main { display: flex; flex-direction: column; gap: 0.15rem; }
+
+    .work-desc {
+      font-size: 0.68rem;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      text-transform: none;
+      line-height: 1.4;
+    }
+
+    /* ===== HIRE NOTE ===== */
+    .hire-note {
+      font-size: 0.68rem;
+      color: var(--muted);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 300;
+      margin-bottom: 1.5rem;
+    }
+    .hire-note a { color: #000; text-decoration: none; }
+    .hire-note a:hover { text-decoration: underline; }
 
     /* Footer */
     .site-footer {
@@ -531,7 +556,7 @@
           I'm <span class="intro-highlight">Flint</span>.
         </h2>
         <p class="intro-sub animate animate-on-scroll" id="sub1">
-          Tommy's AI assistant, built to turn ideas into working products.
+          AI systems that feel intuitive — chatbots, games, dashboards, and tools built from scratch.
         </p>
       </div>
     </section>
@@ -544,7 +569,7 @@
           We design, automate, and build.
         </h2>
         <p class="intro-sub animate animate-on-scroll" id="sub2">
-          Websites, dashboards, voice tools, and interactive games you can use right now.
+          Each project is designed end-to-end: architecture, UI, and behavior.
         </p>
       </div>
     </section>
@@ -559,35 +584,37 @@
           <details class="work-dropdown">
             <summary class="work-btn">Chat Agents</summary>
             <div class="work-dropdown-menu">
-              <a href="pages/chat-agents/jamf-agent/index.html">JAMF Agent</a>
+              <a href="pages/chat-agents/jamf-agent/index.html"><span class="work-item-main"><span>JAMF Agent</span><span class="work-desc">Helpdesk AI · policy lookup via vector search</span></span></a>
             </div>
           </details>
 
           <details class="work-dropdown">
             <summary class="work-btn">Creative Corner</summary>
             <div class="work-dropdown-menu">
-              <a href="https://www.tymmop.com" target="_blank" rel="noopener noreferrer nofollow external">between the spaces (music)</a>
+              <a href="https://www.tymmop.com" target="_blank" rel="noopener noreferrer nofollow external"><span class="work-item-main"><span>between the spaces</span><span class="work-desc">Music · ambient electronic</span></span></a>
             </div>
           </details>
 
           <details class="work-dropdown">
             <summary class="work-btn">Data Dashboards</summary>
             <div class="work-dropdown-menu">
-              <a href="pages/dashboards/roster-architect/index.html">Roster Architect</a>
+              <a href="pages/dashboards/roster-architect/index.html"><span class="work-item-main"><span>Roster Architect</span><span class="work-desc">NBA simulator · snake draft + salary-cap engine</span></span></a>
             </div>
           </details>
 
           <details class="work-dropdown">
             <summary class="work-btn">Digital Games</summary>
             <div class="work-dropdown-menu">
-              <a href="pages/games/index.html">Tower Defense</a>
-              <a href="pages/games/board-hub.html">Board Arcade</a>
+              <a href="pages/games/index.html"><span class="work-item-main"><span>Tower Defense</span><span class="work-desc">Canvas game · wave engine + pathfinding AI</span></span></a>
+              <a href="pages/games/board-hub.html"><span class="work-item-main"><span>Board Arcade</span><span class="work-desc">Chess, Checkers, Tic-Tac-Toe · minimax AI</span></span></a>
             </div>
           </details>
         </div>
 
+        <p class="hire-note">Open to AI roles and freelance work. <a href="mailto:flintcdrom@gmail.com">Let's talk →</a></p>
+
         <footer class="site-footer">
-          <p class="footer-copy">Built by Flint, Tommy's trusty AI.</p>
+          <p class="footer-copy">Tommy — AI engineer. Built with Flint.</p>
           <a class="linkedin-btn" href="https://www.linkedin.com/in/tphet" target="_blank" rel="noopener noreferrer nofollow external">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M19 3A2 2 0 0 1 21 5v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-9.5 6.44h-3v9h3v-9zM8 5.56a1.72 1.72 0 1 0 0 3.44 1.72 1.72 0 0 0 0-3.44zM18 12.27c0-2.66-1.42-3.9-3.3-3.9-1.52 0-2.2.84-2.58 1.43v-1.23h-3v9h3v-5.03c0-1.33.25-2.62 1.9-2.62 1.62 0 1.65 1.52 1.65 2.7v4.95h3v-5.3z"/>

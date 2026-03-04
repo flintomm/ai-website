@@ -431,6 +431,25 @@
       color: var(--text);
     }
 
+    /* ===== TECH STRIP ===== */
+    .tech-strip {
+      padding: 0.55rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+    .tech-strip span {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.22rem 0.5rem;
+    }
+
     .hint {
       color: var(--muted);
       font-size: 0.72rem;
@@ -473,12 +492,16 @@
     </header>
 
     <section class="hero">
-      <h1>JAMF Agent Reference Deck</h1>
+      <h1>JAMF Agent</h1>
       <p>
-        This page uses placeholder templates and reference material while the full documentation indexing pipeline is being built.
-        Use the bottom-right JAMF Agent chat window to ask questions, test prompts, and iterate on policy workflows.
+        An AI assistant trained on JAMF Pro documentation. Ask it anything — device enrollment, policy setup,
+        smart group logic, patch management. Use the chat window to get started.
       </p>
     </section>
+
+    <div class="tech-strip">
+      <span>RAG</span><span>Vector Search</span><span>Node.js</span><span>OpenAI API</span>
+    </div>
 
     <section class="docs-grid" aria-label="JAMF documentation templates">
       <article class="doc-card span-6">
@@ -585,9 +608,10 @@
       <div>
         <textarea id="prompt" placeholder="Type your JAMF question..." required></textarea>
         <div class="template-row">
-          <button class="template-btn" type="button" data-template="Build a scoped Jamf Pro policy rollout plan for FileVault enforcement.">Policy Template</button>
-          <button class="template-btn" type="button" data-template="Create smart group logic for devices missing a required app version.">Smart Group Template</button>
-          <button class="template-btn" type="button" data-template="Draft API automation steps to rotate a Jamf policy package safely.">API Template</button>
+          <button class="template-btn" type="button" data-template="How do I enroll a new device?">Enroll a device</button>
+          <button class="template-btn" type="button" data-template="What's the password reset policy?">Password reset</button>
+          <button class="template-btn" type="button" data-template="How do I install approved software?">Install software</button>
+          <button class="template-btn" type="button" data-template="What MDM profiles are applied to my Mac?">MDM profiles</button>
         </div>
       </div>
       <button id="sendBtn" class="btn" type="submit">Send</button>

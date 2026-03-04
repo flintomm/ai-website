@@ -3,86 +3,211 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Creative Stuff</title>
+    <title>Creative Corner | Flint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;700&display=swap" rel="stylesheet" />
     <style>
       :root {
-        color-scheme: light;
-        --bg: #0b1220;
-        --card: #121a2b;
-        --text: #f3f6ff;
-        --muted: #9aa4bf;
-        --accent: #ffb347;
+        --bg: #0a0a0a;
+        --surface: #111;
+        --border: rgba(255,255,255,0.09);
+        --border-hi: rgba(255,255,255,0.22);
+        --text: #fff;
+        --muted: rgba(255,255,255,0.42);
+        --accent: #39ff14;
+        --font: "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
 
       body {
-        margin: 0;
-        font-family: "Space Grotesk", system-ui, sans-serif;
-        background: radial-gradient(circle at top, #1a2742 0%, #0b1220 45%);
+        font-family: var(--font);
+        background: var(--bg);
         color: var(--text);
         min-height: 100vh;
-        display: grid;
-        place-items: center;
-        padding: 2rem 1.5rem;
       }
 
-      .card {
-        max-width: 620px;
-        width: 100%;
-        background: var(--card);
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+      /* ===== SITE NAV ===== */
+      .site-nav {
+        padding: 1.2rem 2rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .back-link {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .back-link:hover { color: var(--accent); }
+
+      .site-tag {
+        font-size: 0.62rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 300;
+      }
+
+      /* ===== HEADER ===== */
+      body > header {
+        padding: 2rem clamp(1.5rem, 4vw, 3rem) 1.5rem;
+        border-bottom: 1px solid var(--border);
       }
 
       h1 {
-        margin: 0 0 0.75rem;
-        font-size: clamp(2rem, 4vw, 2.6rem);
+        font-size: clamp(1.8rem, 4vw, 3rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.5rem;
       }
 
-      p {
-        margin: 0 0 1.5rem;
+      .header-sub {
+        font-size: 0.8rem;
         color: var(--muted);
+        font-weight: 300;
+        letter-spacing: 0.1em;
         line-height: 1.6;
       }
 
-      ul {
-        margin: 0;
-        padding-left: 1.1rem;
-        color: var(--text);
-        line-height: 1.7;
+      /* ===== MAIN ===== */
+      main {
+        padding: 2rem clamp(1.5rem, 4vw, 3rem);
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
       }
 
-      .tag {
+      /* ===== PROJECT CARD ===== */
+      .project-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        transition: border-color 0.15s;
+      }
+      .project-card:hover { border-color: var(--border-hi); }
+
+      .card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .card-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .status-chip {
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.5rem;
+        border: 1px solid;
+        flex-shrink: 0;
+      }
+      .status-chip.live {
+        color: var(--accent);
+        border-color: rgba(57,255,20,0.4);
+        background: rgba(57,255,20,0.06);
+      }
+      .status-chip.wip {
+        color: #f7c46c;
+        border-color: rgba(247,196,108,0.35);
+        background: rgba(247,196,108,0.06);
+      }
+
+      .card-desc {
+        font-size: 0.8rem;
+        color: var(--muted);
+        line-height: 1.6;
+        font-weight: 300;
+      }
+
+      .card-link {
+        margin-top: auto;
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        padding: 0.3rem 0.7rem;
-        border-radius: 999px;
-        background: rgba(255, 179, 71, 0.12);
+        gap: 0.35rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
         color: var(--accent);
-        font-weight: 600;
-        font-size: 0.85rem;
+        text-decoration: none;
+        transition: opacity 0.15s;
+      }
+      .card-link:hover { opacity: 0.7; }
+
+      .card-link-muted {
+        margin-top: auto;
+        font-size: 0.68rem;
+        font-weight: 300;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        cursor: default;
+      }
+
+      @media (max-width: 600px) {
+        .site-nav { padding: 1rem 1.2rem; }
+        body > header { padding: 1.5rem 1.2rem 1rem; }
+        main { padding: 1rem 1.2rem; }
       }
     </style>
   </head>
   <body>
-    <main class="card">
-      <span class="tag">Creative Stuff</span>
-      <h1>Creative labs are coming online.</h1>
-      <p>
-        This hub will hold AI movie trailers, music experiments, and comics. We will keep the format
-        light, visual, and easy to browse as more projects land.
-      </p>
-      <ul>
-        <li>AI Movie Trailers</li>
-        <li>AI Music</li>
-        <li>AI Comics</li>
-      </ul>
+    <nav class="site-nav">
+      <a class="back-link" href="../../index.html#section-4">← Flint</a>
+      <span class="site-tag">Creative Corner</span>
+    </nav>
+
+    <header>
+      <h1>Creative Work</h1>
+      <p class="header-sub">Music, film, and illustration — made with AI and a lot of late nights.</p>
+    </header>
+
+    <main>
+      <div class="project-card">
+        <div class="card-header">
+          <span class="card-title">between the spaces</span>
+          <span class="status-chip live">Live</span>
+        </div>
+        <p class="card-desc">Ambient electronic music. Slow builds, textured sound design, and the kind of thing that plays well in the background at 2am.</p>
+        <a class="card-link" href="https://www.tymmop.com" target="_blank" rel="noopener noreferrer nofollow external">Visit site →</a>
+      </div>
+
+      <div class="project-card">
+        <div class="card-header">
+          <span class="card-title">Movie Trailers</span>
+          <span class="status-chip wip">In Progress</span>
+        </div>
+        <p class="card-desc">AI-generated concept trailers for films that don't exist yet. Visual experiments in narrative, pacing, and atmosphere.</p>
+        <span class="card-link-muted">Coming soon</span>
+      </div>
+
+      <div class="project-card">
+        <div class="card-header">
+          <span class="card-title">Comics</span>
+          <span class="status-chip wip">In Progress</span>
+        </div>
+        <p class="card-desc">An ongoing illustrated series. Character-driven, made panel by panel with AI tools and a lot of iteration.</p>
+        <span class="card-link-muted">Coming soon</span>
+      </div>
     </main>
   </body>
 </html>

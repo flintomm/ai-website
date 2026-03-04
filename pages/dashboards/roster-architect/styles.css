@@ -53,6 +53,24 @@ body {
   font-weight: 300;
 }
 
+/* ===== TECH STRIP ===== */
+.tech-strip {
+  padding: 0.55rem 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.tech-strip span {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.22rem 0.5rem;
+}
+
 /* ===== LAYOUT ===== */
 header,
 main,

@@ -66,6 +66,24 @@
         font-weight: 300;
       }
 
+      /* ===== TECH STRIP ===== */
+      .tech-strip {
+        padding: 0.55rem clamp(1.5rem, 4vw, 3.5rem);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        border-bottom: 1px solid var(--line);
+      }
+      .tech-strip span {
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        padding: 0.22rem 0.5rem;
+      }
+
       /* ===== PAGE CONTENT ===== */
       .page-wrap {
         padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
@@ -319,6 +337,10 @@
         </div>
         <div class="meta">v0.2</div>
       </header>
+
+      <div class="tech-strip">
+        <span>Minimax AI</span><span>Alpha-Beta Pruning</span><span>Canvas</span><span>Vanilla JS</span>
+      </div>
 
       <main>
         <section class="panel">
