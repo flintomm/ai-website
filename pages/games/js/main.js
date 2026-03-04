@@ -125,16 +125,18 @@ function updateHud() {
   hudCredits.textContent = state.credits;
   hudEnemies.textContent = state.enemies.length;
   hudStatus.textContent = state.buildMode ? "Build mode" : "Wave live";
+  hudStatus.className = state.buildMode ? "status-pill build" : "status-pill live";
 }
 
 function buildTowerCards() {
   towerList.innerHTML = Object.entries(TOWERS)
     .map(
       ([key, tower]) => `
-      <button class="tower-card ${state.selectedTower === key ? "active" : ""}" data-tower="${key}">
-        <strong>${tower.name}</strong>
-        <span>Cost $${tower.cost} · Range ${tower.range}</span>
-        <span>Fire rate ${tower.fireRate}s · Damage ${tower.damage}</span>
+      <button class="tower-card ${state.selectedTower === key ? "active" : ""}"
+              data-tower="${key}" style="--tower-color:${tower.color}">
+        <strong style="color:${state.selectedTower === key ? tower.color : ''}">${tower.name}</strong>
+        <span>$${tower.cost} &nbsp;·&nbsp; Range ${tower.range}</span>
+        <span>${tower.fireRate}s fire &nbsp;·&nbsp; ${tower.damage} dmg${tower.slow ? " &nbsp;·&nbsp; slows" : ""}</span>
       </button>
     `
     )
@@ -144,9 +146,9 @@ function buildTowerCards() {
 function updateTowerInspect() {
   const tower = TOWERS[state.selectedTower];
   towerInspect.innerHTML = `
-    <h3>${tower.name}</h3>
-    <p>Damage: ${tower.damage} | Fire rate: ${tower.fireRate}s | Range: ${tower.range}</p>
-    <p class="muted">Sprite set: idle + shoot frames (destroyed reserved).</p>
+    <strong style="color:${tower.color}">${tower.name}</strong>
+    <br>Cost $${tower.cost} &nbsp;·&nbsp; Range ${tower.range}
+    <br>Damage ${tower.damage} &nbsp;·&nbsp; Fire ${tower.fireRate}s${tower.slow ? " &nbsp;·&nbsp; Slows enemies" : ""}
   `;
 }
 
@@ -304,7 +306,8 @@ function update(dt) {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.strokeStyle = "rgba(255,255,255,0.11)";
+  ctx.lineWidth = 0.5;
   for (let x = 0; x <= grid.cols; x += 1) {
     const px = grid.padding + x * grid.cell;
     ctx.beginPath();
@@ -319,10 +322,25 @@ function drawGrid() {
     ctx.lineTo(grid.padding + grid.cols * grid.cell, py);
     ctx.stroke();
   }
+  ctx.lineWidth = 1;
 }
 
 function drawPath() {
-  // Path intentionally hidden; background art shows it.
+  if (path.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = "rgba(40,180,220,0.2)";
+  ctx.lineWidth = grid.cell * 0.72;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  const s = gridToPixel(path[0].x, path[0].y);
+  ctx.moveTo(s.x, s.y);
+  path.slice(1).forEach((node) => {
+    const p = gridToPixel(node.x, node.y);
+    ctx.lineTo(p.x, p.y);
+  });
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawBackground() {

@@ -12,13 +12,13 @@
     />
     <style>
       :root {
-        --bg: #fff;
-        --surface: #f5f5f5;
-        --border: rgba(0,0,0,0.12);
-        --border-hi: rgba(0,0,0,0.28);
-        --text: #000;
-        --muted: #666;
-        --accent: #ff3333;
+        --bg: #0a0a0a;
+        --surface: #111;
+        --border: rgba(255,255,255,0.09);
+        --border-hi: rgba(255,255,255,0.22);
+        --text: #fff;
+        --muted: rgba(255,255,255,0.42);
+        --accent: #39ff14;
         --font: "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
       }
 
@@ -141,22 +141,32 @@
 
       .controls button {
         padding: 0.75rem 1rem;
-        border: 1px solid var(--border-hi);
-        background: #fff;
-        color: #000;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.05);
+        color: var(--muted);
         font-weight: 700;
         font-size: 0.72rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
         cursor: pointer;
         font-family: var(--font);
-        transition: background 0.15s, color 0.15s;
+        transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
       }
 
       .controls button:hover {
+        color: var(--text);
+        border-color: var(--border-hi);
+      }
+
+      .controls button.warning {
         background: var(--accent);
-        color: #fff;
+        color: #000;
         border-color: var(--accent);
+      }
+
+      .controls button.warning:hover {
+        box-shadow: 0 0 16px rgba(57,255,20,0.5);
+        opacity: 0.9;
       }
 
       .controls button.secondary {
@@ -170,27 +180,16 @@
         border-color: var(--border-hi);
       }
 
-      .controls button.warning {
-        background: #fff;
-        color: #000;
-        border-color: var(--border-hi);
-      }
-
-      .controls button.warning:hover {
-        background: var(--accent);
-        color: #fff;
-        border-color: var(--accent);
-      }
-
       .controls button.danger {
         background: transparent;
-        color: var(--muted);
-        border-color: var(--border);
+        color: rgba(255,255,255,0.2);
+        border-color: transparent;
+        font-size: 0.66rem;
       }
 
       .controls button.danger:hover {
-        color: var(--text);
-        border-color: var(--border-hi);
+        color: #ff3399;
+        border-color: rgba(255,51,153,0.3);
       }
 
       /* ===== TOWER CARDS ===== */
@@ -202,6 +201,7 @@
       .tower-card {
         background: var(--surface);
         border: 1px solid var(--border);
+        border-left: 3px solid transparent;
         padding: 0.75rem;
         display: grid;
         gap: 0.3rem;
@@ -209,12 +209,14 @@
         font: inherit;
         color: var(--text);
         cursor: pointer;
-        transition: border-color 0.15s;
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
         font-family: var(--font);
       }
 
       .tower-card:hover {
         border-color: var(--border-hi);
+        border-left-color: var(--tower-color, var(--border-hi));
+        background: rgba(255,255,255,0.04);
       }
 
       .tower-card span {
@@ -224,18 +226,19 @@
       }
 
       .tower-card.active {
-        border-color: var(--accent);
-        border-left-width: 3px;
-        background: #fff;
+        border-left-color: var(--tower-color, var(--accent));
+        background: rgba(255,255,255,0.05);
+        box-shadow: inset 3px 0 8px rgba(255,255,255,0.04);
       }
 
       .tower-inspect {
         margin-top: 1rem;
         padding: 0.9rem;
         border: 1px solid var(--border);
-        background: var(--surface);
+        background: rgba(255,255,255,0.03);
         font-size: 0.82rem;
         color: var(--muted);
+        line-height: 1.7;
       }
 
       /* ===== HUD OVERLAY ===== */
@@ -279,9 +282,10 @@
         text-transform: none;
       }
 
-      .chip.good strong { color: #fff; }
-      .chip.warn strong { color: #999; }
-      .chip.bad  strong { color: #666; }
+      .chip.credits strong { color: #39ff14; text-shadow: 0 0 8px rgba(57,255,20,0.6); }
+      .chip.wave    strong { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.6); }
+      .chip.enemies strong { color: #f7c46c; text-shadow: 0 0 8px rgba(247,196,108,0.5); }
+      .chip.lives   strong { color: #ff3399; text-shadow: 0 0 8px rgba(255,51,153,0.6); }
 
       .status-pill {
         padding: 0.3rem 0.65rem;
@@ -291,7 +295,10 @@
         font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
+        transition: color 0.3s, border-color 0.3s;
       }
+      .status-pill.build { color: #39ff14; border-color: rgba(57,255,20,0.45); }
+      .status-pill.live  { color: #ff3399; border-color: rgba(255,51,153,0.45); }
 
       .note {
         color: var(--muted);
@@ -338,10 +345,10 @@
           <div class="neon-flicker"></div>
           <div class="hud-bar" aria-hidden="true">
             <div class="hud-group">
-              <div class="chip good"><span>Credits</span><strong id="hud-credits">250</strong></div>
-              <div class="chip"><span>Wave</span><strong id="hud-wave">1</strong></div>
-              <div class="chip warn"><span>Enemies</span><strong id="hud-enemies">0</strong></div>
-              <div class="chip bad"><span>Lives</span><strong id="hud-lives">20</strong></div>
+              <div class="chip credits"><span>Credits</span><strong id="hud-credits">250</strong></div>
+              <div class="chip wave"><span>Wave</span><strong id="hud-wave">1</strong></div>
+              <div class="chip enemies"><span>Enemies</span><strong id="hud-enemies">0</strong></div>
+              <div class="chip lives"><span>Lives</span><strong id="hud-lives">20</strong></div>
             </div>
             <div class="status-pill" id="hud-status">Build mode</div>
           </div>
