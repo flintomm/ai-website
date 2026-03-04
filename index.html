@@ -129,7 +129,7 @@
       z-index: 0;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 1.2s ease;
+      transition: opacity 5s ease;
     }
 
     .hero-video.loaded {
@@ -225,11 +225,11 @@
       letter-spacing: -0.03em;
       text-align: center;
       opacity: 1;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .hero-hi.animate { opacity: 0; }
-    .hero-hi.animate.visible { opacity: 1; }
+    .hero-hi.animate { opacity: 0; transform: translateY(36px); }
+    .hero-hi.animate.visible { opacity: 1; transform: translateY(0); }
 
     .intro-text {
       font-size: clamp(2.2rem, 5.5vw, 5.5rem);
@@ -238,11 +238,11 @@
       letter-spacing: -0.025em;
       margin-bottom: 2rem;
       opacity: 1;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .intro-text.animate { opacity: 0; }
-    .intro-text.animate.visible { opacity: 1; }
+    .intro-text.animate { opacity: 0; transform: translateY(24px); }
+    .intro-text.animate.visible { opacity: 1; transform: translateY(0); }
 
     .intro-highlight {
       background: #fff;
@@ -259,13 +259,13 @@
       text-transform: uppercase;
       line-height: 1.8;
       opacity: 1;
-      transition: opacity 0.5s ease 0.12s;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.18s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.18s;
     }
 
-    .intro-sub.animate { opacity: 0; }
-    .intro-sub.animate.visible { opacity: 1; }
+    .intro-sub.animate { opacity: 0; transform: translateY(16px); }
+    .intro-sub.animate.visible { opacity: 1; transform: translateY(0); }
 
-    .animate-on-scroll { will-change: opacity; }
+    .animate-on-scroll { will-change: opacity, transform; }
 
     /* ===== SHOWCASE ===== */
     .showcase {
@@ -295,11 +295,11 @@
       color: #000;
       margin-bottom: 4rem;
       opacity: 1;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .showcase-title.animate { opacity: 0; }
-    .showcase-title.animate.visible { opacity: 1; }
+    .showcase-title.animate { opacity: 0; transform: translateY(20px); }
+    .showcase-title.animate.visible { opacity: 1; transform: translateY(0); }
 
     /* Work grid — 2×2 structured */
     .work-cloud {
@@ -414,8 +414,8 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.65rem 1.1rem;
-      border: 1px solid var(--border-hi);
-      color: #fff;
+      border: none;
+      color: #0A66C2;
       text-decoration: none;
       font-weight: 700;
       font-size: 0.68rem;
@@ -425,7 +425,7 @@
       transition: background 0.15s ease, color 0.15s ease;
     }
 
-    .linkedin-btn:hover { background: #fff; color: #000; }
+    .linkedin-btn:hover { background: #0A66C2; color: #fff; }
 
     .linkedin-btn svg {
       width: 14px;
@@ -615,7 +615,7 @@
       setTimeout(() => {
         document.getElementById('progressDots').classList.add('visible');
         scrollHint.classList.add('visible');
-      }, 300);
+      }, 700);
       setupObserver();
       setupNavigation();
       setupScrollDampener();
@@ -652,13 +652,15 @@
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       progressBar.style.transform = `scaleX(${scrollY / docHeight})`;
 
-      // Fade out video as user scrolls down (fade starts at 0, complete by 50vh)
+      // Fade video out as user scrolls (complete by 50vh).
+      // At scrollY=0, remove inline style so the CSS 5s fade-in transition runs unobstructed.
       if (heroVideo) {
-        const fadeStart = 0;
-        const fadeEnd = window.innerHeight * 0.5;
-        let opacity = 1 - (scrollY - fadeStart) / (fadeEnd - fadeStart);
-        opacity = Math.max(0, Math.min(1, opacity));
-        heroVideo.style.opacity = opacity;
+        if (scrollY <= 0) {
+          heroVideo.style.removeProperty('opacity');
+        } else {
+          const fadeEnd = window.innerHeight * 0.5;
+          heroVideo.style.opacity = Math.max(0, 1 - scrollY / fadeEnd);
+        }
       }
 
       sections.forEach((section, index) => {
@@ -705,13 +707,13 @@
         if (event.ctrlKey) return;
         event.preventDefault();
         const scrollLimit = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
-        targetScrollY = Math.min(Math.max(targetScrollY + event.deltaY * 0.28, 0), scrollLimit);
+        targetScrollY = Math.min(Math.max(targetScrollY + event.deltaY * 0.42, 0), scrollLimit);
 
         if (dampenFrame) return;
         const animate = () => {
           const current = window.scrollY;
-          const next    = current + (targetScrollY - current) * 0.18;
-          if (Math.abs(targetScrollY - current) < 0.5) {
+          const next    = current + (targetScrollY - current) * 0.085;
+          if (Math.abs(targetScrollY - current) < 0.4) {
             window.scrollTo(0, targetScrollY);
             dampenFrame = null;
             return;
@@ -727,8 +729,37 @@
       if (isScrolling || index < 0 || index >= sections.length) return;
       isScrolling = true;
       currentSection = index;
-      sections[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setTimeout(() => { isScrolling = false; }, 800);
+
+      const scrollLimit = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+      const dest   = Math.min(Math.max(sections[index].offsetTop, 0), scrollLimit);
+      const startY = window.scrollY;
+      const dist   = dest - startY;
+      const dur    = 950;
+      let t0 = null;
+
+      // Cancel any in-flight dampener frame
+      if (dampenFrame) { cancelAnimationFrame(dampenFrame); dampenFrame = null; }
+
+      function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      }
+
+      function step(ts) {
+        if (!t0) t0 = ts;
+        const p = Math.min((ts - t0) / dur, 1);
+        const y = startY + dist * easeInOutCubic(p);
+        window.scrollTo(0, y);
+        targetScrollY = y; // keep dampener in sync
+        if (p < 1) {
+          dampenFrame = requestAnimationFrame(step);
+        } else {
+          targetScrollY = dest;
+          dampenFrame = null;
+          isScrolling = false;
+        }
+      }
+
+      dampenFrame = requestAnimationFrame(step);
     }
 
     let ticking = false;
