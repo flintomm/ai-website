@@ -1,5 +1,17 @@
 {
+  "name": "ai-website",
+  "version": "1.0.0",
+  "description": "AI Website with JAMF Agent chatbot",
+  "main": "server.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  },
   "dependencies": {
-    "dotenv": "^17.3.1"
+    "dotenv": "^16.4.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
