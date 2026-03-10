@@ -237,7 +237,7 @@
   function renderMessages() {
     els.messageList.innerHTML = "";
     if (state.messages.length === 0) {
-      addMessage("assistant", "Welcome. Unlock access with your email to begin.", false);
+      addMessage("assistant", "Hi! I'm Flint. Tommy said you might need some help here, so let me know if anything comes up.", false);
       return;
     }
     state.messages.forEach((m) => addMessage(m.role, m.content, false));
@@ -350,7 +350,7 @@
     window.setTimeout(() => {
       els.gate.classList.remove("vault-opening");
       onComplete();
-    }, 750);
+    }, 820);
   }
 
   function triggerTagGlow() {

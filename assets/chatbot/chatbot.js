@@ -125,7 +125,7 @@
   function renderMessages() {
     els.messages.innerHTML = "";
     if (state.messages.length === 0) {
-      addBubble("assistant", "Hi, I'm Flint. Ask me about this page or any project on this site.", false);
+      addBubble("assistant", "Hi! I'm Flint. Tommy said you might need some help here, so let me know if anything comes up.", false);
       return;
     }
     state.messages.forEach((m) => addBubble(m.role, m.content, false));

@@ -216,8 +216,10 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transform-origin: left center;
+  transform-origin: center;
   backface-visibility: hidden;
+  isolation: isolate;
+  will-change: opacity, transform, filter, clip-path;
 }
 
 .site-email-gate[hidden] {
@@ -231,15 +233,72 @@
   color: #111;
 }
 
-@keyframes vaultSwing {
-  0%   { transform: perspective(1200px) rotateY(0deg); opacity: 1; }
-  70%  { opacity: 1; }
-  100% { transform: perspective(1200px) rotateY(-95deg); opacity: 0; }
+.site-email-gate::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255,255,255,0.78), transparent 42%),
+    radial-gradient(circle at 78% 84%, rgba(255,255,255,0.48), transparent 46%),
+    linear-gradient(120deg, rgba(0,0,0,0.04), rgba(255,255,255,0.12));
+  opacity: 0;
+}
+
+.site-email-gate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,0.7) 46%, transparent 60%);
+  transform: translateX(-130%);
+  opacity: 0;
+}
+
+@keyframes vaultUnlock {
+  0% {
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+  45% {
+    clip-path: inset(0 0 0 0);
+    transform: translateY(-2px) scale(1.01);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-18px) scale(0.98);
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+
+@keyframes vaultGlowFade {
+  0% { opacity: 0; transform: scale(0.94); }
+  40% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.07); }
+}
+
+@keyframes vaultSheenSweep {
+  0% { transform: translateX(-130%); opacity: 0; }
+  26% { opacity: 0.92; }
+  100% { transform: translateX(130%); opacity: 0; }
 }
 
 .site-email-gate.vault-opening {
-  animation: vaultSwing 0.75s cubic-bezier(0.4, 0, 0.8, 1) forwards;
+  animation: vaultUnlock 0.82s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: none;
+}
+
+.site-email-gate.vault-opening::before {
+  animation: vaultGlowFade 0.82s ease-out forwards;
+}
+
+.site-email-gate.vault-opening::after {
+  animation: vaultSheenSweep 0.82s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 @keyframes gateButtonReveal {
