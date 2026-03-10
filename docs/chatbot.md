@@ -9,6 +9,8 @@ This website uses a floating chatbot widget on every page. The frontend calls lo
 - `GET /api/chat/health`
 - `GET /api/chat/models`
 - `POST /api/chat/message`
+- `POST /api/site-chat/chat` (legacy alias for landing assistant compatibility)
+- `POST /api/site-chat/events` (accepts telemetry events, returns `{ ok: true }`)
 
 ## Request payload (`POST /api/chat/message`)
 
@@ -34,3 +36,18 @@ This website uses a floating chatbot widget on every page. The frontend calls lo
 - Frontend never receives provider credentials.
 - Chat messages are rendered as text only to reduce XSS risk.
 - Page context sent to backend is metadata-only (URL/title/path).
+
+## Deployment checks
+
+Run these after each deploy to validate domain routing:
+
+- `GET /api/chat/health` should return `200`.
+- `POST /api/chat/message` should return `200` with an `assistant` object.
+- `POST /api/site-chat/chat` should return `200` with an `assistantMessage` object.
+
+## Recommended production routing (Cloudflare Pages + Railway API)
+
+- Frontend: `https://tphch.com` (Cloudflare Pages)
+- API: `https://api.tphch.com` (Railway custom domain)
+
+The frontend assistants default to `https://api.tphch.com` when loaded from `tphch.com` or any `*.tphch.com` hostname (excluding `api.tphch.com` itself). Local development remains same-origin by default.

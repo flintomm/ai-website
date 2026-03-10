@@ -4,11 +4,20 @@
     sessionId: "flint_chat_session_id_v1",
     messages: "flint_chat_messages_v1"
   };
+  const config = window.CHATBOT_CONFIG || window.SITE_ASSISTANT_CONFIG || {};
+  const defaultApiBase = (function resolveDefaultApiBase() {
+    const host = String(window.location.hostname || "").toLowerCase();
+    if (host === "tphch.com" || host.endsWith(".tphch.com")) {
+      if (host !== "api.tphch.com") return "https://api.tphch.com";
+    }
+    return "";
+  }());
 
   const MAX_MESSAGES = 20;
   const state = {
     open: readBool(STORAGE.open),
     sending: false,
+    apiBase: resolveApiBase(),
     sessionId: readOrCreateSessionId(),
     messages: readMessages(),
     previousFocus: null
@@ -49,6 +58,17 @@
     } catch {
       return [];
     }
+  }
+
+  function resolveApiBase() {
+    const configured = String(config.apiBase || "").trim();
+    if (configured) return configured.replace(/\/+$/, "");
+    return defaultApiBase.replace(/\/+$/, "");
+  }
+
+  function toApiUrl(pathname) {
+    if (!state.apiBase) return pathname;
+    return `${state.apiBase}${pathname}`;
   }
 
   function saveMessages() {
@@ -131,7 +151,7 @@
     addBubble("user", content, true);
 
     try {
-      const response = await fetch("/api/chat/message", {
+      const response = await fetch(toApiUrl("/api/chat/message"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

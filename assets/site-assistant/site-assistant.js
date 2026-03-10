@@ -12,7 +12,13 @@
   };
 
   const config = window.SITE_ASSISTANT_CONFIG || {};
-  const defaultApiBase = "https://fantastic-strength-production-7563.up.railway.app";
+  const defaultApiBase = (function resolveDefaultApiBase() {
+    const host = String(window.location.hostname || "").toLowerCase();
+    if (host === "tphch.com" || host.endsWith(".tphch.com")) {
+      if (host !== "api.tphch.com") return "https://api.tphch.com";
+    }
+    return "";
+  }());
   const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const trackedControls = new Set();
   let lastPageKey = "";
@@ -67,12 +73,6 @@
   function resolveApiBase() {
     const configured = String(config.apiBase || "").trim();
     if (configured) return configured.replace(/\/+$/, "");
-    try {
-      const saved = String(localStorage.getItem(STORAGE.apiBase) || "").trim();
-      if (saved) return saved.replace(/\/+$/, "");
-    } catch {
-      // no-op
-    }
     return defaultApiBase.replace(/\/+$/, "");
   }
 
@@ -277,13 +277,14 @@
     setStatus("Thinking...", false);
 
     try {
-      const response = await fetch(toApiUrl("/api/site-chat/chat"), {
+      const response = await fetch(toApiUrl("/api/chat/message"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId: state.sessionId,
           modelRef: "minimax/MiniMax-M2.1",
-          messages: state.messages.slice(-16)
+          messages: state.messages.slice(-16),
+          page: buildPageView()
         })
       });
 
@@ -293,7 +294,7 @@
       }
 
       const data = await response.json();
-      const assistant = String(data?.assistantMessage?.content || "").trim();
+      const assistant = String(data?.assistant?.content || data?.assistantMessage?.content || "").trim();
       if (!assistant) throw new Error("Assistant returned an empty response.");
       addMessage("assistant", assistant, true);
       setStatus("Ready", false);

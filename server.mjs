@@ -255,6 +255,55 @@ function serveStatic(req, res) {
   }
 }
 
+async function handleChatMessage(req, res, options = {}) {
+  const { legacyShape = false } = options;
+
+  if (!enforceRateLimit(req)) {
+    sendJson(res, 429, { ok: false, error: "Rate limit exceeded. Please retry shortly." });
+    return;
+  }
+
+  try {
+    const body = await readJsonBody(req);
+    const sessionId = String(body?.sessionId || "").trim().slice(0, 120);
+    const messages = sanitizeMessages(body?.messages);
+    const page = sanitizePage(body?.page);
+    const modelRef = resolveModelRef(body?.modelRef);
+
+    if (!sessionId) {
+      sendJson(res, 400, { ok: false, error: "sessionId is required" });
+      return;
+    }
+
+    if (messages.length === 0 || !messages.some((m) => m.role === "user")) {
+      sendJson(res, 400, { ok: false, error: "At least one user message is required" });
+      return;
+    }
+
+    const sessionRule = enforceSessionGuardrails(sessionId);
+    if (!sessionRule.ok) {
+      sendJson(res, sessionRule.status, { ok: false, error: sessionRule.error });
+      return;
+    }
+
+    const boundedMessages = trimMessagesByBudget(messages);
+    const assistantText = await callMiniMax({ modelRef, messages: boundedMessages, page });
+    const assistant = {
+      role: "assistant",
+      content: assistantText
+    };
+
+    sendJson(res, 200, legacyShape
+      ? { ok: true, model: modelRef, assistantMessage: assistant }
+      : { ok: true, model: modelRef, assistant });
+  } catch (error) {
+    sendJson(res, 500, {
+      ok: false,
+      error: error instanceof Error ? error.message : "Unexpected server error"
+    });
+  }
+}
+
 const server = createServer(async (req, res) => {
   const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const pathname = requestUrl.pathname;
@@ -293,50 +342,17 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && pathname === "/api/chat/message") {
-    if (!enforceRateLimit(req)) {
-      sendJson(res, 429, { ok: false, error: "Rate limit exceeded. Please retry shortly." });
-      return;
-    }
+    await handleChatMessage(req, res, { legacyShape: false });
+    return;
+  }
 
-    try {
-      const body = await readJsonBody(req);
-      const sessionId = String(body?.sessionId || "").trim().slice(0, 120);
-      const messages = sanitizeMessages(body?.messages);
-      const page = sanitizePage(body?.page);
-      const modelRef = resolveModelRef(body?.modelRef);
+  if (req.method === "POST" && pathname === "/api/site-chat/chat") {
+    await handleChatMessage(req, res, { legacyShape: true });
+    return;
+  }
 
-      if (!sessionId) {
-        sendJson(res, 400, { ok: false, error: "sessionId is required" });
-        return;
-      }
-
-      if (messages.length === 0 || !messages.some((m) => m.role === "user")) {
-        sendJson(res, 400, { ok: false, error: "At least one user message is required" });
-        return;
-      }
-
-      const sessionRule = enforceSessionGuardrails(sessionId);
-      if (!sessionRule.ok) {
-        sendJson(res, sessionRule.status, { ok: false, error: sessionRule.error });
-        return;
-      }
-
-      const boundedMessages = trimMessagesByBudget(messages);
-      const assistantText = await callMiniMax({ modelRef, messages: boundedMessages, page });
-      sendJson(res, 200, {
-        ok: true,
-        model: modelRef,
-        assistant: {
-          role: "assistant",
-          content: assistantText
-        }
-      });
-    } catch (error) {
-      sendJson(res, 500, {
-        ok: false,
-        error: error instanceof Error ? error.message : "Unexpected server error"
-      });
-    }
+  if (req.method === "POST" && pathname === "/api/site-chat/events") {
+    sendJson(res, 200, { ok: true });
     return;
   }
 
