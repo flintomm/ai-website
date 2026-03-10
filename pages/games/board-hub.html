@@ -321,6 +321,36 @@
       @media (max-width: 980px) {
         main { grid-template-columns: 1fr; }
       }
+
+      @media (max-width: 760px) {
+        .site-nav { padding: 0.85rem 1rem; }
+        .site-tag { letter-spacing: 0.16em; }
+        .page-wrap { padding: 1rem; }
+        .tech-strip { padding: 0.45rem 1rem; gap: 0.3rem; }
+        .tech-strip span { font-size: 0.56rem; }
+        header { gap: 0.9rem; margin-bottom: 1rem; }
+        h1 { font-size: clamp(1.55rem, 8.5vw, 2.15rem); }
+        header p { font-size: 0.78rem; line-height: 1.5; }
+        .panel, .board-shell { padding: 1rem; }
+        .tabs { grid-template-columns: 1fr; gap: 0.55rem; }
+        .tab { font-size: 0.72rem; padding: 0.62rem 0.78rem; }
+        .controls { gap: 0.45rem; }
+        .btn {
+          flex: 1 1 auto;
+          min-width: 120px;
+          padding: 0.6rem 0.8rem;
+          font-size: 0.74rem;
+        }
+      }
+
+      @media (max-height: 540px) and (orientation: landscape) {
+        .site-nav { padding: 0.65rem 0.95rem; }
+        .page-wrap { padding: 0.8rem 0.95rem 1.1rem; }
+        header { margin-bottom: 0.8rem; }
+        main { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+        .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .board-shell { padding: 0.8rem; }
+      }
     </style>
   <link rel="stylesheet" href="../../assets/chatbot/chatbot.css" />
 </head>

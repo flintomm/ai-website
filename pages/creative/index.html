@@ -166,7 +166,27 @@
       @media (max-width: 600px) {
         .site-nav { padding: 1rem 1.2rem; }
         body > header { padding: 1.5rem 1.2rem 1rem; }
-        main { padding: 1rem 1.2rem; }
+        .site-tag { letter-spacing: 0.16em; }
+        body > header h1 { font-size: clamp(1.6rem, 9vw, 2rem); }
+        main {
+          padding: 1rem 1.2rem;
+          grid-template-columns: 1fr;
+          gap: 0.8rem;
+        }
+        .project-card { padding: 1rem; }
+        .card-title { font-size: 0.82rem; }
+        .card-desc { font-size: 0.76rem; }
+      }
+
+      @media (max-height: 540px) and (orientation: landscape) {
+        .site-nav { padding: 0.75rem 1rem; }
+        body > header { padding: 1rem; }
+        main {
+          padding: 0.8rem 1rem 1.2rem;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.75rem;
+        }
+        .project-card { padding: 0.9rem; }
       }
     </style>
   <link rel="stylesheet" href="../../assets/chatbot/chatbot.css" />

@@ -445,4 +445,31 @@ tr.row-new { animation: rowEnter 170ms ease-out forwards; }
   header, main { width: 97vw; }
   .fields.two-col, .fields.three-col,
   .stats.four, .stats.two { grid-template-columns: 1fr; }
+  .site-tag { letter-spacing: 0.16em; }
+  header { padding: 0.8rem 0 0.55rem; }
+  h1 { font-size: clamp(1.35rem, 8vw, 1.9rem); }
+  header > p { font-size: 0.68rem; line-height: 1.45; }
+  .card { padding: 0.52rem; box-shadow: 2px 2px 0 var(--accent-dim); }
+  .card-head { gap: 0.3rem; }
+  .card-head h2 { font-size: 0.6rem; }
+  .btn { width: 100%; justify-content: center; }
+  .table-wrap.compact { max-height: 170px; }
+}
+
+@media (max-height: 540px) and (orientation: landscape) {
+  .site-nav { padding: 0.52rem 0.85rem; }
+  .tech-strip, .flow-strip { padding: 0.22rem 0.85rem; }
+  header { padding: 0.6rem 0 0.38rem; }
+  h1 { font-size: clamp(1.22rem, 3vw, 1.7rem); }
+  header > p { margin-top: 0.12rem; font-size: 0.64rem; }
+  main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding-top: 0.32rem;
+  }
+  .setup-card, .income-card, .finale-card,
+  .expense-card, .viz-card, .insights-card { grid-column: auto; }
+  .fields.two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats.two, .stats.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .table-wrap.compact { max-height: 145px; }
 }

@@ -504,3 +504,45 @@ footer p {
   .draft-grid { grid-template-columns: 1fr; }
   .site-nav { padding: 1rem 1.2rem; }
 }
+
+@media (max-width: 720px) {
+  .site-nav,
+  .tech-strip { padding-left: 0.9rem; padding-right: 0.9rem; }
+  .site-tag { letter-spacing: 0.16em; }
+  header, main, footer { width: 96vw; }
+  header {
+    padding: 1.2rem 0 0.9rem;
+    margin-bottom: 0.75rem;
+  }
+  h1 { font-size: clamp(1.45rem, 8.5vw, 2rem); }
+  header > p { font-size: 0.78rem; line-height: 1.5; }
+  .panel { padding: 0.8rem; }
+  .panel-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .setup-grid,
+  .rules-grid,
+  .controls-row,
+  .draft-status {
+    grid-template-columns: 1fr;
+  }
+  .step-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn { width: 100%; text-align: center; }
+  .list { min-height: 190px; max-height: 280px; }
+  th, td { font-size: 0.76rem; }
+}
+
+@media (max-height: 540px) and (orientation: landscape) {
+  .site-nav,
+  .tech-strip { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  header { padding-top: 1rem; }
+  .panel { padding: 0.75rem; }
+  .setup-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rules-grid,
+  .controls-row,
+  .draft-status { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

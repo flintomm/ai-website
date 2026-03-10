@@ -499,6 +499,33 @@
       .section-label { left: 5vw; }
     }
 
+    @media (max-width: 900px) {
+      .section { min-height: 88svh; }
+      .site-wordmark { padding: 1rem 1.2rem; }
+      .wordmark-tag { letter-spacing: 0.14em; }
+      .hero-video {
+        width: 132px;
+        height: 74px;
+        bottom: 1rem;
+        left: 1rem;
+      }
+      .frame-nav { padding: 0.9rem 1rem; }
+      .frame-tag { letter-spacing: 0.18em; }
+    }
+
+    @media (max-height: 520px) and (orientation: landscape) {
+      .section { min-height: 120svh; padding: 7vh 6vw; }
+      .site-wordmark { padding: 0.65rem 1rem; }
+      .section-label { top: 1rem; }
+      .scroll-hint { display: none; }
+      .hero-video {
+        width: 110px;
+        height: 62px;
+        bottom: 0.75rem;
+        left: 0.75rem;
+      }
+    }
+
     /* ===== REDUCED MOTION ===== */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
