@@ -854,13 +854,85 @@
     }
 
     function setupDropdownHover() {
-      workDropdowns.forEach((dropdown) => {
-        dropdown.addEventListener('mouseenter', () => {
-          workDropdowns.forEach(other => { if (other !== dropdown) other.removeAttribute('open'); });
-          dropdown.setAttribute('open', '');
+      const finePointerMedia = window.matchMedia('(hover: hover) and (pointer: fine)');
+      const detailsToSummary = new Map();
+
+      const closeAllDropdowns = (except) => {
+        workDropdowns.forEach((other) => {
+          if (other === except) return;
+          other.removeAttribute('open');
         });
-        dropdown.addEventListener('mouseleave', () => dropdown.removeAttribute('open'));
-      });
+      };
+
+      const onDesktopMouseEnter = (dropdown) => {
+        closeAllDropdowns(dropdown);
+        dropdown.setAttribute('open', '');
+      };
+
+      const onDesktopMouseLeave = (dropdown) => {
+        dropdown.removeAttribute('open');
+      };
+
+      const onMobileSummaryClick = (event, dropdown) => {
+        event.preventDefault();
+        const isOpen = dropdown.hasAttribute('open');
+        closeAllDropdowns(dropdown);
+        if (isOpen) {
+          dropdown.removeAttribute('open');
+        } else {
+          dropdown.setAttribute('open', '');
+        }
+      };
+
+      const onMobileOutsideClick = (event) => {
+        if (event.target instanceof Element && event.target.closest('.work-dropdown')) return;
+        closeAllDropdowns();
+      };
+
+      const applyMode = () => {
+        const isDesktop = finePointerMedia.matches;
+
+        workDropdowns.forEach((dropdown) => {
+          dropdown.removeEventListener('mouseenter', dropdown.__desktopEnterHandler);
+          dropdown.removeEventListener('mouseleave', dropdown.__desktopLeaveHandler);
+          const summary = detailsToSummary.get(dropdown);
+          if (summary) {
+            summary.removeEventListener('click', summary.__mobileClickHandler);
+          }
+        });
+        document.removeEventListener('click', onMobileOutsideClick);
+
+        workDropdowns.forEach((dropdown) => {
+          const summary = dropdown.querySelector('summary.work-btn');
+          if (!summary) return;
+          detailsToSummary.set(dropdown, summary);
+
+          if (isDesktop) {
+            const enterHandler = () => onDesktopMouseEnter(dropdown);
+            const leaveHandler = () => onDesktopMouseLeave(dropdown);
+            dropdown.__desktopEnterHandler = enterHandler;
+            dropdown.__desktopLeaveHandler = leaveHandler;
+            dropdown.addEventListener('mouseenter', enterHandler);
+            dropdown.addEventListener('mouseleave', leaveHandler);
+            return;
+          }
+
+          const mobileClickHandler = (event) => onMobileSummaryClick(event, dropdown);
+          summary.__mobileClickHandler = mobileClickHandler;
+          summary.addEventListener('click', mobileClickHandler);
+        });
+
+        if (!isDesktop) {
+          document.addEventListener('click', onMobileOutsideClick);
+        }
+      };
+
+      applyMode();
+      if (finePointerMedia.addEventListener) {
+        finePointerMedia.addEventListener('change', applyMode);
+      } else if (finePointerMedia.addListener) {
+        finePointerMedia.addListener(applyMode);
+      }
     }
 
     function setupScrollDampener() {
