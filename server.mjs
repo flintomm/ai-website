@@ -475,6 +475,19 @@ function parseAssistantText(data) {
     .trim();
 }
 
+function currentPageSummary(page, destination) {
+  const lines = [
+    `Destination label: ${destination.label}`,
+    `Destination path: ${destination.path}`
+  ];
+
+  if (page?.title) lines.push(`Browser title: ${page.title}`);
+  if (page?.path) lines.push(`Browser path: ${page.path}`);
+  if (page?.url) lines.push(`Browser URL: ${page.url}`);
+
+  return lines.join("\n");
+}
+
 function buildSystemPrompt(page, messages) {
   const context = [];
   if (page?.url) context.push(`URL: ${page.url}`);
@@ -504,12 +517,16 @@ function buildSystemPrompt(page, messages) {
     "Do not add follow-up questions, next steps, or extra suggestions unless the user explicitly asks for recommendations or navigation options.",
     "Treat the website like a hotel metaphor lightly (max 1-2 phrases per response).",
     "Be warm, concise, and practical. Default to reactive behavior: answer directly unless asked for guidance.",
+    "The current page block below is authoritative for where the visitor is right now.",
+    "If the user asks what page they are on, where they are, or what this page is, answer from the current destination/page block first.",
+    "Prefer the real destination label and real path when identifying the current page.",
     "When recommending where to go, use real page/project names and explicit real paths.",
     "Never invent rooms, pages, tools, features, or private owner information.",
     "Do not claim to read hidden page content.",
     `Guidance request detected: ${guidanceIntent ? "yes" : "no"}.`,
     `Owner handoff trigger detected: ${handoffIntent ? "yes" : "no"}.`,
     `Current destination: ${currentDestination.label} (${currentDestination.path}).`,
+    `Current page:\n${currentPageSummary(page, currentDestination)}`,
     userText ? `Latest user message:\n${userText.slice(0, 300)}` : "Latest user message: unavailable",
     snippets.length > 0 ? `Concierge knowledge snippets:\n${snippets.join("\n\n")}` : "Concierge knowledge snippets: unavailable",
     knowledge.length > 0 ? `Site knowledge snippets:\n${knowledge.join("\n\n")}` : "Site knowledge snippets: unavailable",
