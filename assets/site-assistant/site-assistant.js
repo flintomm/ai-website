@@ -4,14 +4,10 @@
   const STORAGE = {
     unlocked: "site_assistant_unlocked_v1",
     email: "site_assistant_email_v1",
-    open: "site_assistant_open_v1",
     sessionId: "site_assistant_session_id_v1",
-    messages: "site_assistant_messages_v1",
-    apiBase: "site_assistant_api_base_v1"
-  };
-
-  const SESSION = {
-    revealPlayed: "site_assistant_reveal_played_v1"
+    transcript: "site_assistant_messages_v1",
+    apiBase: "site_assistant_api_base_v1",
+    legacyOpen: "site_assistant_open_v1"
   };
 
   const config = window.SITE_ASSISTANT_CONFIG || {};
@@ -25,20 +21,22 @@
   const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const trackedControls = new Set();
   const MESSAGE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  const MAX_TRANSCRIPT_ENTRIES = 60;
+  const MAX_CHAT_HISTORY = 16;
   const gateRequired = Boolean(document.getElementById("workCloud"));
   let lastPageKey = "";
 
+  const sessionInfo = readOrInitSessionId();
   const state = {
     unlocked: gateRequired ? readBool(STORAGE.unlocked) : true,
     freshUnlock: false,
     gateState: "locked",
-    chatOpen: readBool(STORAGE.open),
     sending: false,
-    sessionId: readOrInitSessionId(),
+    sessionId: sessionInfo.id,
+    sessionIsNew: sessionInfo.isNew,
     apiBase: resolveApiBase(),
-    messages: readMessages(),
+    transcript: readTranscript(),
     currentPage: buildPageView(),
-    previousFocus: null,
     pendingGateError: ""
   };
 
@@ -52,37 +50,102 @@
     }
   }
 
-  function readMessages() {
+  function normalizeEntryType(value) {
+    if (value === "user" || value === "assistant" || value === "system") return value;
+    return null;
+  }
+
+  function normalizeEntryState(type, value) {
+    if (type !== "system") return "";
+    if (value === "ready" || value === "busy" || value === "error") return value;
+    return "info";
+  }
+
+  function makeLegacyTimestamp(index, total) {
+    const offset = Math.max(total - index, 1);
+    return Date.now() - (offset * 1000);
+  }
+
+  function sanitizeEntry(entry, fallbackTs) {
+    const type = normalizeEntryType(entry?.type || entry?.role);
+    const content = String(entry?.content || "").trim();
+    if (!type || !content) return null;
+
+    const rawTs = Number(entry?.ts || entry?.timestamp || fallbackTs || Date.now());
+    const ts = Number.isFinite(rawTs) && rawTs > 0 ? rawTs : Date.now();
+    const safeEntry = { type, content, ts };
+    const stateValue = normalizeEntryState(type, entry?.state);
+    if (stateValue) safeEntry.state = stateValue;
+    return safeEntry;
+  }
+
+  function readTranscript() {
     try {
-      const raw = localStorage.getItem(STORAGE.messages);
+      const raw = localStorage.getItem(STORAGE.transcript);
       if (!raw) return [];
+
       const parsed = JSON.parse(raw);
       const now = Date.now();
       const savedAt = Number(parsed?.savedAt || 0);
-      const fromObject = Array.isArray(parsed?.messages) ? parsed.messages : null;
-      const fromArray = Array.isArray(parsed) ? parsed : null;
-      const source = fromObject || fromArray || [];
-
       if (savedAt > 0 && (now - savedAt) > MESSAGE_TTL_MS) {
-        localStorage.removeItem(STORAGE.messages);
+        localStorage.removeItem(STORAGE.transcript);
         return [];
       }
 
-      return source.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string").slice(-30);
+      if (Array.isArray(parsed?.entries)) {
+        return parsed.entries
+          .map((entry, index) => sanitizeEntry(entry, now - ((parsed.entries.length - index) * 1000)))
+          .filter(Boolean)
+          .slice(-MAX_TRANSCRIPT_ENTRIES);
+      }
+
+      const legacyMessages = Array.isArray(parsed?.messages)
+        ? parsed.messages
+        : (Array.isArray(parsed) ? parsed : []);
+
+      return legacyMessages
+        .map((message, index) => sanitizeEntry(message, makeLegacyTimestamp(index, legacyMessages.length)))
+        .filter(Boolean)
+        .slice(-MAX_TRANSCRIPT_ENTRIES);
     } catch {
       return [];
+    }
+  }
+
+  function persistTranscript() {
+    try {
+      localStorage.setItem(STORAGE.transcript, JSON.stringify({
+        version: 2,
+        savedAt: Date.now(),
+        entries: state.transcript
+      }));
+    } catch {
+      // no-op
+    }
+  }
+
+  function retireLegacyOpenState() {
+    try {
+      localStorage.removeItem(STORAGE.legacyOpen);
+    } catch {
+      // no-op
     }
   }
 
   function readOrInitSessionId() {
     try {
       const existing = localStorage.getItem(STORAGE.sessionId);
-      if (existing) return existing;
-      const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      if (existing) return { id: existing, isNew: false };
+      const id = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+        ? crypto.randomUUID()
+        : `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       localStorage.setItem(STORAGE.sessionId, id);
-      return id;
+      return { id, isNew: true };
     } catch {
-      return `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      return {
+        id: `sess_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+        isNew: true
+      };
     }
   }
 
@@ -107,6 +170,27 @@
       referrer: document.referrer || "",
       ts: Date.now()
     };
+  }
+
+  function formatPageLabel(page) {
+    const path = String(page?.path || "").trim() || "/";
+    return path.length > 40 ? `...${path.slice(-37)}` : path;
+  }
+
+  function formatTime(ts) {
+    const value = Number(ts);
+    if (!Number.isFinite(value) || value <= 0) return "--:--";
+    return new Date(value).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+  }
+
+  function prefixForEntry(entry) {
+    if (entry.type === "user") return "guest$";
+    if (entry.type === "assistant") return "flint>";
+    return "sys::";
   }
 
   function emitEvent(event) {
@@ -147,13 +231,151 @@
     });
   }
 
+  function appendTranscriptEntry(type, content, options = {}) {
+    const safeType = normalizeEntryType(type);
+    const safeContent = String(content || "").trim();
+    if (!safeType || !safeContent) return;
+
+    const entry = {
+      type: safeType,
+      content: safeContent,
+      ts: Number.isFinite(Number(options.ts)) && Number(options.ts) > 0 ? Number(options.ts) : Date.now()
+    };
+
+    if (safeType === "system") {
+      entry.state = normalizeEntryState(safeType, options.state);
+    }
+
+    state.transcript.push(entry);
+    state.transcript = state.transcript.slice(-MAX_TRANSCRIPT_ENTRIES);
+
+    if (options.persist !== false) persistTranscript();
+    renderTranscript();
+  }
+
+  function appendSystemLine(content, stateValue, options = {}) {
+    appendTranscriptEntry("system", content, {
+      state: stateValue || "info",
+      persist: options.persist,
+      ts: options.ts
+    });
+  }
+
+  function clearTranscript() {
+    state.transcript = [];
+    persistTranscript();
+    appendSystemLine("history cleared", "info");
+  }
+
+  function renderTranscript() {
+    if (!els.transcript) return;
+    els.transcript.innerHTML = "";
+
+    if (state.transcript.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "site-assistant-empty";
+      empty.textContent = "sys:: terminal ready";
+      els.transcript.appendChild(empty);
+      return;
+    }
+
+    state.transcript.forEach((entry) => {
+      const item = document.createElement("li");
+      item.className = `site-assistant-entry ${entry.type}`;
+      if (entry.type === "system" && entry.state) item.dataset.state = entry.state;
+
+      const time = document.createElement("span");
+      time.className = "site-assistant-entry-time";
+      time.textContent = formatTime(entry.ts);
+
+      const prefix = document.createElement("span");
+      prefix.className = "site-assistant-entry-prefix";
+      prefix.textContent = prefixForEntry(entry);
+
+      const text = document.createElement("span");
+      text.className = "site-assistant-entry-content";
+      text.textContent = entry.content;
+
+      item.appendChild(time);
+      item.appendChild(prefix);
+      item.appendChild(text);
+      els.transcript.appendChild(item);
+    });
+
+    els.transcript.scrollTop = els.transcript.scrollHeight;
+  }
+
+  function setStatus(text, stateValue) {
+    if (!els.status) return;
+    els.status.textContent = String(text || "");
+    els.status.dataset.state = stateValue || "info";
+  }
+
+  function collectGatedControls() {
+    const explicit = Array.from(document.querySelectorAll("[data-gated-control]"));
+    explicit.forEach((el) => trackedControls.add(el));
+  }
+
+  function resolveChatHost() {
+    return document.querySelector(".site-wordmark, .site-nav");
+  }
+
+  function setControlLocked(el, locked) {
+    if (!(el instanceof HTMLElement)) return;
+    if (el.dataset.siteGateManaged !== "1") {
+      el.dataset.siteGateManaged = "1";
+      if ("disabled" in el) {
+        el.dataset.siteGateWasDisabled = String(Boolean(el.disabled));
+      }
+      el.dataset.siteGateTabIndex = el.getAttribute("tabindex") || "";
+    }
+
+    if (locked) {
+      el.classList.add("site-gated-disabled");
+      if ("disabled" in el) el.disabled = true;
+      el.setAttribute("aria-disabled", "true");
+      if (el.getAttribute("role") === "button" || el.tagName === "A" || el.tagName === "SUMMARY") {
+        el.setAttribute("tabindex", "-1");
+      }
+      return;
+    }
+
+    el.classList.remove("site-gated-disabled");
+    if ("disabled" in el) {
+      el.disabled = el.dataset.siteGateWasDisabled === "true";
+    }
+    el.removeAttribute("aria-disabled");
+    if (el.getAttribute("role") === "button" || el.tagName === "A" || el.tagName === "SUMMARY") {
+      const previousTabIndex = el.dataset.siteGateTabIndex || "";
+      if (previousTabIndex) {
+        el.setAttribute("tabindex", previousTabIndex);
+      } else {
+        el.removeAttribute("tabindex");
+      }
+    }
+  }
+
+  function applyGateToControls(locked) {
+    trackedControls.forEach((el) => setControlLocked(el, locked));
+  }
+
+  function syncTerminalControls() {
+    const disabled = !state.unlocked || state.sending;
+    if (els.chatInput) els.chatInput.disabled = disabled;
+    if (els.chatSend) els.chatSend.disabled = disabled;
+    if (els.chatClear) els.chatClear.disabled = !state.unlocked;
+    if (els.terminal) els.terminal.classList.toggle("is-disabled", !state.unlocked);
+  }
+
   function maybeEmitPageView() {
     const page = buildPageView();
     const key = `${page.url}|${page.title}`;
     if (key === lastPageKey) return;
+
     lastPageKey = key;
     state.currentPage = page;
     emitEvent(page);
+    appendSystemLine(`page -> ${formatPageLabel(page)}`, "info");
   }
 
   function bindNavigationObserver() {
@@ -182,141 +404,29 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
-  function collectGatedControls() {
-    const explicit = Array.from(document.querySelectorAll("[data-gated-control]"));
-    explicit.forEach((el) => trackedControls.add(el));
+  function formatErrorMessage(error) {
+    const message = error instanceof Error ? error.message : "request failed";
+    return message.replace(/\s+/g, " ").trim().slice(0, 88) || "request failed";
   }
 
-  function resolveChatHost() {
-    return document.querySelector(".site-wordmark, .site-nav");
-  }
-
-  function setControlLocked(el, locked) {
-    if (!(el instanceof HTMLElement)) return;
-    if (el.dataset.siteGateManaged !== "1") {
-      el.dataset.siteGateManaged = "1";
-      if ("disabled" in el) {
-        el.dataset.siteGateWasDisabled = String(Boolean(el.disabled));
-      }
-      el.dataset.siteGateTabIndex = el.getAttribute("tabindex") || "";
-      if (el.tagName === "A") {
-        el.dataset.siteGateHref = el.getAttribute("href") || "";
-      }
-    }
-
-    if (locked) {
-      el.classList.add("site-gated-disabled");
-      if ("disabled" in el) {
-        el.disabled = true;
-      }
-      el.setAttribute("aria-disabled", "true");
-      if (el.getAttribute("role") === "button" || el.tagName === "A" || el.tagName === "SUMMARY") {
-        el.setAttribute("tabindex", "-1");
-      }
-      return;
-    }
-
-    el.classList.remove("site-gated-disabled");
-    if ("disabled" in el) {
-      el.disabled = el.dataset.siteGateWasDisabled === "true";
-    }
-    el.removeAttribute("aria-disabled");
-    if (el.getAttribute("role") === "button" || el.tagName === "A" || el.tagName === "SUMMARY") {
-      const prev = el.dataset.siteGateTabIndex || "";
-      if (prev) {
-        el.setAttribute("tabindex", prev);
-      } else {
-        el.removeAttribute("tabindex");
-      }
-    }
-  }
-
-  function applyGateToControls(locked) {
-    trackedControls.forEach((el) => setControlLocked(el, locked));
-  }
-
-  function addMessage(role, content, persist) {
-    const safeRole = role === "user" ? "user" : "assistant";
-    const item = document.createElement("li");
-    item.className = `site-assistant-bubble ${safeRole}`;
-    item.textContent = String(content || "");
-    els.messageList.appendChild(item);
-    els.messageList.scrollTop = els.messageList.scrollHeight;
-
-    if (persist) {
-      state.messages.push({ role: safeRole, content: String(content || "") });
-      state.messages = state.messages.slice(-30);
-      try {
-        localStorage.setItem(STORAGE.messages, JSON.stringify({
-          savedAt: Date.now(),
-          messages: state.messages
-        }));
-      } catch {
-        // no-op
-      }
-    }
-  }
-
-  function clearMessages() {
-    state.messages = [];
-    try {
-      localStorage.removeItem(STORAGE.messages);
-    } catch {
-      // no-op
-    }
-    renderMessages();
-  }
-
-  function renderMessages() {
-    els.messageList.innerHTML = "";
-    if (state.messages.length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "site-assistant-empty";
-      empty.textContent = "Type here to start chatting with Flint";
-      els.messageList.appendChild(empty);
-      return;
-    }
-    state.messages.forEach((m) => addMessage(m.role, m.content, false));
-  }
-
-  function setStatus(text, isError) {
-    els.status.textContent = text;
-    els.status.classList.toggle("error", Boolean(isError));
-  }
-
-  function setChatOpen(open, options = {}) {
-    const { silent = false, skipFocus = false } = options;
-    state.chatOpen = open;
-    els.chatWindow.hidden = !open;
-    els.chatToggle.setAttribute("aria-expanded", String(open));
-    try {
-      localStorage.setItem(STORAGE.open, open ? "1" : "0");
-    } catch {
-      // no-op
-    }
-
-    if (open) {
-      state.previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      if (!silent) emitChatCommand("open");
-      els.chatWindow.classList.remove("blurb-open");
-      void els.chatWindow.offsetWidth;
-      els.chatWindow.classList.add("blurb-open");
-      if (!skipFocus) requestAnimationFrame(() => els.chatInput.focus());
-    } else {
-      if (!silent) emitChatCommand("close");
-      const returnTarget = state.previousFocus && state.previousFocus.isConnected ? state.previousFocus : els.chatToggle;
-      if (!skipFocus) returnTarget.focus();
-    }
+  function getConversationMessages() {
+    return state.transcript
+      .filter((entry) => entry && (entry.type === "user" || entry.type === "assistant"))
+      .slice(-MAX_CHAT_HISTORY)
+      .map((entry) => ({ role: entry.type, content: entry.content }));
   }
 
   async function sendChatMessage(question) {
     const trimmed = String(question || "").trim().slice(0, 4000);
-    if (!trimmed || state.sending) return;
+    if (!trimmed || state.sending || !state.unlocked) return;
 
     state.sending = true;
-    els.chatSend.disabled = true;
-    addMessage("user", trimmed, true);
-    setStatus("Thinking...", false);
+    syncTerminalControls();
+    appendTranscriptEntry("user", trimmed);
+    emitChatCommand("submit");
+    appendSystemLine("request sent", "info");
+    appendSystemLine("thinking", "busy");
+    setStatus("thinking", "busy");
 
     try {
       const response = await fetch(toApiUrl("/api/chat/message"), {
@@ -325,28 +435,31 @@
         body: JSON.stringify({
           sessionId: state.sessionId,
           modelRef: "minimax/MiniMax-M2.1",
-          messages: state.messages.slice(-16),
+          messages: getConversationMessages(),
           page: buildPageView()
         })
       });
 
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(`Chat request failed (${response.status}): ${text.slice(0, 160)}`);
+        throw new Error(`chat ${response.status}: ${text.slice(0, 120)}`);
       }
 
       const data = await response.json();
       const assistant = String(data?.assistant?.content || data?.assistantMessage?.content || "").trim();
-      if (!assistant) throw new Error("Assistant returned an empty response.");
-      addMessage("assistant", assistant, true);
-      setStatus("Ready", false);
+      if (!assistant) throw new Error("empty response");
+
+      appendTranscriptEntry("assistant", assistant);
+      appendSystemLine("ready", "ready");
+      setStatus("ready", "ready");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Request failed", true);
-      addMessage("assistant", "I ran into a temporary error. Please try again.", true);
+      appendSystemLine(`request failed: ${formatErrorMessage(error)}`, "error");
+      appendTranscriptEntry("assistant", "I ran into a temporary error. Please try again.");
+      setStatus("error", "error");
     } finally {
       state.sending = false;
-      els.chatSend.disabled = false;
-      els.chatInput.focus();
+      syncTerminalControls();
+      if (state.unlocked && els.chatInput) els.chatInput.focus();
     }
   }
 
@@ -366,28 +479,22 @@
     }
 
     emitGateState("unlocked", { email });
+    appendSystemLine("gate unlocked", "ready");
     updateUiForGateState();
-    revealHeaderOncePerSession();
-    setStatus("Ready", false);
+    setStatus("ready", "ready");
     els.gateSubmit.disabled = false;
     els.gateProgress.textContent = "";
   }
 
-  function revealHeaderOncePerSession() {
-    if (reducedMotion) return;
-    try {
-      if (sessionStorage.getItem(SESSION.revealPlayed) === "1") return;
-      sessionStorage.setItem(SESSION.revealPlayed, "1");
-    } catch {
-      // no-op
-    }
-
-    els.chatToggle.classList.add("reveal");
-    window.setTimeout(() => els.chatToggle.classList.remove("reveal"), 320);
-  }
-
   function playVaultAnimation(onComplete) {
-    if (reducedMotion) { onComplete(); return; }
+    if (!els.gate) {
+      onComplete();
+      return;
+    }
+    if (reducedMotion) {
+      onComplete();
+      return;
+    }
     els.gate.classList.add("vault-opening");
     window.setTimeout(() => {
       els.gate.classList.remove("vault-opening");
@@ -395,19 +502,11 @@
     }, 820);
   }
 
-  function triggerTagGlow() {
-    if (reducedMotion) return;
-    els.chatToggle.classList.remove("sa-glow");
-    void els.chatToggle.offsetWidth; // reflow to restart animation
-    els.chatToggle.classList.add("sa-glow");
-    window.setTimeout(() => els.chatToggle.classList.remove("sa-glow"), 1700);
-  }
-
   function revealButtons() {
     if (reducedMotion) return;
     const dropdowns = document.querySelectorAll(".work-dropdown");
-    dropdowns.forEach((el, i) => {
-      window.setTimeout(() => el.classList.add("gate-revealed"), i * 90);
+    dropdowns.forEach((el, index) => {
+      window.setTimeout(() => el.classList.add("gate-revealed"), index * 90);
     });
   }
 
@@ -415,119 +514,143 @@
     const locked = !state.unlocked;
     applyGateToControls(locked);
 
-    els.chatToggle.hidden = locked;
+    if (els.host) els.host.classList.toggle("sa-terminal-locked", locked);
+    if (els.terminal) {
+      els.terminal.hidden = locked;
+      els.terminal.setAttribute("aria-hidden", String(locked));
+    }
+
+    syncTerminalControls();
 
     if (locked) {
-      els.gate.hidden = false;
+      if (els.gate) els.gate.hidden = false;
       if (state.pendingGateError) {
         els.gateError.textContent = state.pendingGateError;
       } else {
         els.gateError.textContent = "";
       }
-      if (state.chatOpen) setChatOpen(false);
-      requestAnimationFrame(() => els.gateEmail.focus());
+      setStatus("locked", "error");
+      requestAnimationFrame(() => {
+        if (els.gateEmail) els.gateEmail.focus();
+      });
       return;
     }
 
     if (state.freshUnlock) {
       state.freshUnlock = false;
-      els.gate.hidden = false;
+      if (els.gate) els.gate.hidden = false;
       playVaultAnimation(() => {
-        els.gate.hidden = true;
-        setChatOpen(true);
-        triggerTagGlow();
+        if (els.gate) els.gate.hidden = true;
+        requestAnimationFrame(() => {
+          if (els.chatInput) els.chatInput.focus();
+        });
       });
       revealButtons();
-    } else {
+    } else if (els.gate) {
       els.gate.hidden = true;
     }
-    els.gateError.textContent = "";
+
     state.pendingGateError = "";
+    if (els.gateError) els.gateError.textContent = "";
+    setStatus(state.sending ? "thinking" : "ready", state.sending ? "busy" : "ready");
   }
 
   function buildUi() {
     const root = document.createElement("div");
     root.id = "siteAssistantRoot";
     root.setAttribute("data-site-chat-owned", "1");
+    document.body.appendChild(root);
 
+    const terminal = document.createElement("section");
+    terminal.className = "site-assistant-inline";
+    terminal.id = "siteAssistantTerminal";
+    terminal.setAttribute("aria-label", "Flint inline terminal");
+    terminal.hidden = gateRequired && !state.unlocked;
 
-    const chatWindow = document.createElement("section");
-    chatWindow.className = "site-assistant-window";
-    chatWindow.id = "siteAssistantWindow";
-    chatWindow.setAttribute("role", "dialog");
-    chatWindow.setAttribute("aria-modal", "false");
-    chatWindow.setAttribute("aria-label", "Site assistant chat window");
-    chatWindow.hidden = true;
+    const chrome = document.createElement("div");
+    chrome.className = "site-assistant-chrome";
 
-    const head = document.createElement("header");
-    head.className = "site-assistant-head";
+    const lights = document.createElement("div");
+    lights.className = "site-assistant-lights";
+    for (let index = 0; index < 3; index += 1) {
+      const light = document.createElement("span");
+      light.className = "site-assistant-light";
+      lights.appendChild(light);
+    }
 
-    const title = document.createElement("h2");
-    title.className = "site-assistant-title";
-    title.textContent = "Site Assistant";
-
-    const close = document.createElement("button");
-    close.type = "button";
-    close.className = "site-assistant-close";
-    close.setAttribute("aria-label", "Close assistant chat");
-    close.textContent = "\u00d7";
+    const status = document.createElement("p");
+    status.className = "site-assistant-status";
+    status.id = "siteAssistantStatus";
+    status.textContent = "booting";
 
     const clear = document.createElement("button");
     clear.type = "button";
     clear.className = "site-assistant-clear";
-    clear.setAttribute("aria-label", "Clear chat history");
-    clear.textContent = "Clear";
+    clear.setAttribute("aria-label", "Clear terminal history");
+    clear.textContent = "clear";
 
-    const headActions = document.createElement("div");
-    headActions.className = "site-assistant-head-actions";
-    headActions.appendChild(clear);
-    headActions.appendChild(close);
+    chrome.appendChild(lights);
+    chrome.appendChild(status);
+    chrome.appendChild(clear);
 
-    head.appendChild(title);
-    head.appendChild(headActions);
-
-    const messageList = document.createElement("ul");
-    messageList.className = "site-assistant-messages";
-    messageList.id = "siteAssistantMessages";
+    const transcript = document.createElement("ol");
+    transcript.className = "site-assistant-transcript";
+    transcript.id = "siteAssistantTranscript";
+    transcript.setAttribute("role", "log");
+    transcript.setAttribute("aria-live", "polite");
+    transcript.setAttribute("aria-relevant", "additions text");
 
     const composer = document.createElement("form");
     composer.className = "site-assistant-form";
 
-    const inputLabel = document.createElement("label");
-    inputLabel.setAttribute("for", "siteAssistantInput");
-    inputLabel.textContent = "Message";
+    const label = document.createElement("label");
+    label.className = "site-assistant-visually-hidden";
+    label.setAttribute("for", "siteAssistantInput");
+    label.textContent = "Message Flint";
 
-    const row = document.createElement("div");
-    row.className = "site-assistant-row";
+    const prompt = document.createElement("span");
+    prompt.className = "site-assistant-prompt-prefix";
+    prompt.textContent = ">";
 
     const input = document.createElement("input");
     input.id = "siteAssistantInput";
     input.className = "site-assistant-input";
     input.type = "text";
-    input.placeholder = "Ask Flint anything\u2026";
+    input.placeholder = "type a message";
     input.maxLength = 4000;
     input.autocomplete = "off";
 
     const send = document.createElement("button");
     send.type = "submit";
     send.className = "site-assistant-send";
-    send.textContent = "Send";
+    send.textContent = "run";
 
-    row.appendChild(input);
-    row.appendChild(send);
+    composer.appendChild(label);
+    composer.appendChild(prompt);
+    composer.appendChild(input);
+    composer.appendChild(send);
 
-    const status = document.createElement("p");
-    status.className = "site-assistant-status";
-    status.id = "siteAssistantStatus";
-    status.textContent = "Ready";
+    terminal.appendChild(chrome);
+    terminal.appendChild(transcript);
+    terminal.appendChild(composer);
 
-    composer.appendChild(inputLabel);
-    composer.appendChild(row);
-    composer.appendChild(status);
+    const chatHost = resolveChatHost();
+    if (chatHost) {
+      chatHost.classList.add("sa-chat-host");
+      if (chatHost.classList.contains("site-wordmark")) {
+        chatHost.classList.add("sa-chat-host-wordmark");
+      } else {
+        chatHost.classList.add("sa-chat-host-nav");
+      }
 
-    chatWindow.appendChild(head);
-    chatWindow.appendChild(messageList);
-    chatWindow.appendChild(composer);
+      if (chatHost.lastElementChild) {
+        chatHost.insertBefore(terminal, chatHost.lastElementChild);
+      } else {
+        chatHost.appendChild(terminal);
+      }
+    } else {
+      root.appendChild(terminal);
+    }
 
     const gate = document.createElement("section");
     gate.className = "site-email-gate";
@@ -535,6 +658,7 @@
     gate.setAttribute("role", "dialog");
     gate.setAttribute("aria-modal", "true");
     gate.setAttribute("aria-labelledby", "siteEmailGateTitle");
+    gate.hidden = !gateRequired || state.unlocked;
 
     const gatePanel = document.createElement("div");
     gatePanel.className = "site-email-gate-panel";
@@ -542,8 +666,19 @@
     const gateTitle = document.createElement("h2");
     gateTitle.id = "siteEmailGateTitle";
     gateTitle.className = "site-email-gate-title";
+    gateTitle.textContent = "Unlock Flint";
+
+    const gateCopy = document.createElement("p");
+    gateCopy.className = "site-email-gate-copy";
+    gateCopy.textContent = "Enter your email to open the terminal.";
+
     const gateForm = document.createElement("form");
     gateForm.className = "site-email-gate-form";
+
+    const gateEmailLabel = document.createElement("label");
+    gateEmailLabel.className = "site-assistant-visually-hidden";
+    gateEmailLabel.setAttribute("for", "siteGateEmail");
+    gateEmailLabel.textContent = "Email";
 
     const gateEmail = document.createElement("input");
     gateEmail.id = "siteGateEmail";
@@ -565,38 +700,16 @@
     gateError.className = "site-email-gate-error";
     gateError.id = "siteGateError";
 
+    gateForm.appendChild(gateEmailLabel);
     gateForm.appendChild(gateEmail);
     gateForm.appendChild(gateSubmit);
     gateForm.appendChild(gateProgress);
     gateForm.appendChild(gateError);
 
+    gatePanel.appendChild(gateTitle);
+    gatePanel.appendChild(gateCopy);
     gatePanel.appendChild(gateForm);
     gate.appendChild(gatePanel);
-
-    root.appendChild(chatWindow);
-
-    document.body.appendChild(root);
-
-    const chatToggle = document.createElement("button");
-    chatToggle.type = "button";
-    chatToggle.className = "sa-header-btn";
-    chatToggle.setAttribute("aria-expanded", "false");
-    chatToggle.setAttribute("aria-controls", "siteAssistantWindow");
-    chatToggle.setAttribute("aria-label", "Open assistant chat");
-    chatToggle.textContent = "Ask Flint";
-    chatToggle.hidden = true;
-    const chatHost = resolveChatHost();
-    if (chatHost) {
-      chatHost.classList.add("sa-chat-host");
-      if (chatHost.classList.contains("site-wordmark")) {
-        chatHost.classList.add("sa-chat-host-wordmark");
-      } else {
-        chatHost.classList.add("sa-chat-host-nav");
-      }
-      chatHost.appendChild(chatToggle);
-    } else {
-      root.appendChild(chatToggle);
-    }
 
     const workCloud = document.getElementById("workCloud");
     if (workCloud) {
@@ -607,14 +720,13 @@
     }
 
     els.root = root;
-    els.chatToggle = chatToggle;
-    els.chatWindow = chatWindow;
-    els.chatClear = clear;
-    els.chatClose = close;
-    els.messageList = messageList;
+    els.host = chatHost;
+    els.terminal = terminal;
+    els.transcript = transcript;
     els.chatForm = composer;
     els.chatInput = input;
     els.chatSend = send;
+    els.chatClear = clear;
     els.status = status;
     els.gate = gate;
     els.gateForm = gateForm;
@@ -625,19 +737,12 @@
   }
 
   function bindUi() {
-    els.chatToggle.addEventListener("click", () => {
-      const next = !state.chatOpen;
-      emitChatCommand("toggle");
-      setChatOpen(next);
-    });
-
     els.chatClear.addEventListener("click", () => {
-      clearMessages();
-      setStatus("Chat cleared", false);
-      if (state.chatOpen) requestAnimationFrame(() => els.chatInput.focus());
+      emitChatCommand("clear");
+      clearTranscript();
+      setStatus("ready", "ready");
+      if (state.unlocked) requestAnimationFrame(() => els.chatInput.focus());
     });
-
-    els.chatClose.addEventListener("click", () => setChatOpen(false));
 
     els.chatForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -661,12 +766,6 @@
       });
     }
 
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && state.chatOpen) {
-        setChatOpen(false);
-      }
-    });
-
     if (gateRequired) {
       document.addEventListener("click", (event) => {
         if (state.unlocked) return;
@@ -686,21 +785,25 @@
     const legacyChatRoot = document.getElementById("flintChatRoot");
     if (legacyChatRoot) legacyChatRoot.remove();
 
+    retireLegacyOpenState();
     buildUi();
-    renderMessages();
+    renderTranscript();
     bindUi();
     collectGatedControls();
 
-    if (state.unlocked) {
-      emitGateState("unlocked");
-    } else {
-      emitGateState("locked");
+    appendSystemLine(state.sessionIsNew ? "session initialized" : "session restored", "info");
+
+    if (gateRequired) {
+      if (state.unlocked) {
+        emitGateState("unlocked");
+        appendSystemLine("gate unlocked", "ready");
+      } else {
+        emitGateState("locked");
+        appendSystemLine("gate locked", "info");
+      }
     }
 
     updateUiForGateState();
-    if (state.unlocked && state.chatOpen) {
-      setChatOpen(true, { silent: true, skipFocus: true });
-    }
     bindNavigationObserver();
   }
 
@@ -709,4 +812,4 @@
   } else {
     init();
   }
-})();
+}());

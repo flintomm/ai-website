@@ -2,7 +2,7 @@
 
 ## Overview
 
-This website uses a unified menu-bar chatbot on every page. The frontend calls local backend routes, and the backend proxies to MiniMax using `MINIMAX_API_KEY` from environment variables.
+This website uses a unified inline terminal chat in the menu bar on every page. The frontend calls local backend routes, and the backend proxies to MiniMax using `MINIMAX_API_KEY` from environment variables.
 
 ## Routes
 
@@ -21,6 +21,38 @@ This website uses a unified menu-bar chatbot on every page. The frontend calls l
   "page": { "url": "https://example.com", "title": "Home", "path": "/" }
 }
 ```
+
+## Frontend UI contract
+
+- The shared frontend lives in:
+  - `/Users/flint/Documents/AI Website/assets/site-assistant/site-assistant.js`
+  - `/Users/flint/Documents/AI Website/assets/site-assistant/site-assistant.css`
+- The frontend injects a single inline terminal component into `.site-wordmark` or `.site-nav`.
+- Desktop layout keeps the existing left/right nav labels and centers the terminal between them.
+- Narrow layouts stack the terminal onto a second row instead of opening a floating window.
+- The visible transcript includes typed `user`, `assistant`, and `system` lines.
+- System lines are intentionally terse and cover operational events such as session restore, page changes, request state, gate state, clear history, and errors.
+- The homepage email gate remains in place and hides the terminal until unlock.
+
+## Client storage
+
+- `site_assistant_session_id_v1` stores the assistant session ID.
+- `site_assistant_messages_v1` now stores typed transcript entries:
+
+```json
+{
+  "version": 2,
+  "savedAt": 1710000000000,
+  "entries": [
+    { "type": "system", "content": "session restored", "ts": 1710000000000, "state": "info" },
+    { "type": "user", "content": "hello", "ts": 1710000001000 },
+    { "type": "assistant", "content": "hi there", "ts": 1710000002000 }
+  ]
+}
+```
+
+- Legacy message arrays or `{ messages: [...] }` objects are still read and mapped into the new transcript shape on load.
+- `site_assistant_open_v1` is retired and cleared by the frontend on initialization.
 
 ## Environment variables
 
