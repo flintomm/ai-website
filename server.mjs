@@ -51,11 +51,42 @@ const MIME = {
 };
 
 const CONCIERGE_GUIDE_PATH = path.join(__dirname, "docs", "flint-concierge-guide.md");
+const SITE_KNOWLEDGE_PATH = path.join(__dirname, "docs", "flint-site-knowledge.md");
 const CONCIERGE_SECTION_FALLBACK = {
   owner_and_host: "Tommy is the Owner of this website. Flint is Tommy's AI assistant and concierge host for visitors.",
-  style_policy: "Stay concise, warm, and practical. Keep hotel metaphor light (1-2 phrases max) and always use real page names/paths.",
+  style_policy: "Keep responses brief (1-3 short sentences, usually under 70 words), warm, and practical. Do not offer follow-up suggestions unless the visitor explicitly asks for recommendations. Keep hotel metaphor light (1-2 phrases max) and always use real page names/paths.",
   guidance_policy: "When users ask where to go, suggest 1-3 relevant destinations with real labels and paths.",
   handoff_policy: "Offer an owner handoff only for explicit hiring/collaboration/contact intent or repeated confusion."
+};
+const KNOWLEDGE_SECTION_FALLBACK = {
+  site_overview: "This website is Flint and Tommy's portfolio with Creative work, Data Dashboards, and Digital Games.",
+  navigation_map: "Main paths: /, /pages/creative/creative-work.html, /pages/dashboards/roster-architect/roster-architect.html, /pages/dashboards/budget-calculator/budget-calculator.html, /pages/games/tower-defense.html, /pages/games/board-hub.html",
+  home_page: "Homepage introduces Flint and offers project entry points through the Work section dropdowns.",
+  creative_corner: "Creative Corner showcases between the spaces and in-progress creative projects.",
+  roster_architect: "Roster Architect is an NBA roster and salary-cap simulator with setup, draft, and outcome views.",
+  budget_calculator: "Budget Calculator is a budget planning dashboard for planned vs actual spending.",
+  tower_defense: "Tower Defense is a canvas strategy game with build, wave, pause, and reset controls.",
+  board_arcade: "Board Arcade includes Tic-Tac-Toe, Checkers, and Chess with reset controls."
+};
+const DESTINATION_KNOWLEDGE_SECTION = {
+  lobby: "home_page",
+  creative_corner: "creative_corner",
+  roster_architect: "roster_architect",
+  budget_calculator: "budget_calculator",
+  tower_defense: "tower_defense",
+  board_arcade: "board_arcade"
+};
+const KNOWLEDGE_KEYWORDS = {
+  site_overview: ["website", "site", "portfolio", "projects", "flint", "tommy"],
+  navigation_map: ["where", "go", "navigate", "path", "url", "link", "start", "visit", "menu", "home"],
+  home_page: ["home", "homepage", "lobby", "work section", "dropdown", "ask flint"],
+  creative_corner: ["creative", "music", "between the spaces", "trailers", "comics", "ambient", "art"],
+  roster_architect: ["roster", "architect", "nba", "draft", "salary cap", "luxury tax", "apron", "payroll", "franchise"],
+  budget_calculator: ["budget", "income", "expense", "planned", "actual", "safe to spend", "50/30/20", "finale"],
+  tower_defense: ["tower", "defense", "wave", "build menu", "credits", "lives", "pause", "reset game", "canvas"],
+  board_arcade: ["board arcade", "tic", "tac", "toe", "checkers", "chess", "flip board", "swap first player"],
+  common_routes: ["recommend", "explore", "what should i", "where to start", "next step", "tour"],
+  troubleshooting: ["bug", "broken", "doesnt work", "doesn't work", "error", "issue", "load", "not working"]
 };
 const DESTINATIONS = [
   {
@@ -108,8 +139,9 @@ const DESTINATIONS = [
   }
 ];
 const CONCIERGE_SECTIONS = loadConciergeSections();
+const SITE_KNOWLEDGE_SECTIONS = loadKnowledgeSections();
 
-function parseConciergeSections(raw) {
+function parseGuideSections(raw) {
   const sections = {};
   let currentKey = null;
   let currentLines = [];
@@ -129,19 +161,32 @@ function parseConciergeSections(raw) {
   return sections;
 }
 
-function loadConciergeSections() {
+function loadGuideSections(filePath, fallback) {
   try {
-    const raw = readFileSync(CONCIERGE_GUIDE_PATH, "utf8");
-    const parsed = parseConciergeSections(raw);
-    return Object.keys(parsed).length > 0 ? parsed : { ...CONCIERGE_SECTION_FALLBACK };
+    const raw = readFileSync(filePath, "utf8");
+    const parsed = parseGuideSections(raw);
+    return Object.keys(parsed).length > 0 ? parsed : { ...fallback };
   } catch {
-    return { ...CONCIERGE_SECTION_FALLBACK };
+    return { ...fallback };
   }
+}
+
+function loadConciergeSections() {
+  return loadGuideSections(CONCIERGE_GUIDE_PATH, CONCIERGE_SECTION_FALLBACK);
+}
+
+function loadKnowledgeSections() {
+  return loadGuideSections(SITE_KNOWLEDGE_PATH, KNOWLEDGE_SECTION_FALLBACK);
 }
 
 function conciergeSection(id) {
   const key = String(id || "").toLowerCase();
   return String(CONCIERGE_SECTIONS[key] || CONCIERGE_SECTION_FALLBACK[key] || "").trim();
+}
+
+function knowledgeSection(id) {
+  const key = String(id || "").toLowerCase();
+  return String(SITE_KNOWLEDGE_SECTIONS[key] || KNOWLEDGE_SECTION_FALLBACK[key] || "").trim();
 }
 
 function normalizePath(value) {
@@ -226,6 +271,83 @@ function conciergeSnippets({ destination, guidanceIntent, handoffIntent, maxSnip
   let usedChars = 0;
   for (const id of selectedIds) {
     const text = conciergeSection(id);
+    if (!text) continue;
+    const snippet = `[${id}] ${text}`;
+    if ((usedChars + snippet.length) > maxChars) continue;
+    selected.push(snippet);
+    usedChars += snippet.length;
+    if (selected.length >= maxSnippets) break;
+  }
+  return selected;
+}
+
+function dedupePreserveOrder(values) {
+  const seen = new Set();
+  const unique = [];
+  for (const value of values) {
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    unique.push(value);
+  }
+  return unique;
+}
+
+function keywordScore(text, keywords) {
+  if (!text || !Array.isArray(keywords) || keywords.length === 0) return 0;
+  let score = 0;
+  for (const keyword of keywords) {
+    const term = String(keyword || "").trim().toLowerCase();
+    if (!term) continue;
+    if (text.includes(term)) score += term.includes(" ") ? 3 : 1;
+  }
+  return score;
+}
+
+function selectKnowledgeSectionIds({ destination, page, userText, guidanceIntent }) {
+  const text = [
+    String(userText || ""),
+    String(page?.title || ""),
+    String(page?.path || ""),
+    String(page?.url || "")
+  ].join(" ").toLowerCase();
+
+  const destinationKey = destination?.key || "lobby";
+  const ids = [
+    "site_overview",
+    "navigation_map",
+    DESTINATION_KNOWLEDGE_SECTION[destinationKey] || "home_page"
+  ];
+
+  if (guidanceIntent) ids.push("common_routes");
+
+  const scored = Object.entries(KNOWLEDGE_KEYWORDS)
+    .map(([id, keywords]) => ({ id, score: keywordScore(text, keywords) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.id);
+
+  return dedupePreserveOrder(ids.concat(scored));
+}
+
+function knowledgeSnippets({
+  destination,
+  page,
+  userText,
+  guidanceIntent,
+  maxSnippets = 8,
+  maxChars = 5200
+}) {
+  const selected = [];
+  const ids = selectKnowledgeSectionIds({
+    destination,
+    page,
+    userText,
+    guidanceIntent
+  });
+
+  let usedChars = 0;
+  for (const id of ids) {
+    const text = knowledgeSection(id);
     if (!text) continue;
     const snippet = `[${id}] ${text}`;
     if ((usedChars + snippet.length) > maxChars) continue;
@@ -369,9 +491,17 @@ function buildSystemPrompt(page, messages) {
     guidanceIntent,
     handoffIntent
   });
+  const knowledge = knowledgeSnippets({
+    destination: currentDestination,
+    page,
+    userText,
+    guidanceIntent
+  });
 
-  return [
+  const promptLines = [
     "You are Flint, Tommy's AI assistant and concierge host for this website.",
+    "Reply briefly: 1-3 short sentences and usually under 70 words unless the user explicitly asks for depth.",
+    "Do not add follow-up questions, next steps, or extra suggestions unless the user explicitly asks for recommendations or navigation options.",
     "Treat the website like a hotel metaphor lightly (max 1-2 phrases per response).",
     "Be warm, concise, and practical. Default to reactive behavior: answer directly unless asked for guidance.",
     "When recommending where to go, use real page/project names and explicit real paths.",
@@ -380,11 +510,17 @@ function buildSystemPrompt(page, messages) {
     `Guidance request detected: ${guidanceIntent ? "yes" : "no"}.`,
     `Owner handoff trigger detected: ${handoffIntent ? "yes" : "no"}.`,
     `Current destination: ${currentDestination.label} (${currentDestination.path}).`,
-    `Nearby destinations:\n${nearbyDestinations.map((destination) => `- ${destination.label}: ${destination.path}`).join("\n")}`,
     userText ? `Latest user message:\n${userText.slice(0, 300)}` : "Latest user message: unavailable",
     snippets.length > 0 ? `Concierge knowledge snippets:\n${snippets.join("\n\n")}` : "Concierge knowledge snippets: unavailable",
+    knowledge.length > 0 ? `Site knowledge snippets:\n${knowledge.join("\n\n")}` : "Site knowledge snippets: unavailable",
     context.length > 0 ? `Page context:\n${context.join("\n")}` : "Page context: unavailable"
-  ].join("\n");
+  ];
+
+  if (guidanceIntent) {
+    promptLines.push(`Nearby destinations:\n${nearbyDestinations.map((destination) => `- ${destination.label}: ${destination.path}`).join("\n")}`);
+  }
+
+  return promptLines.join("\n");
 }
 
 async function callMiniMax({ modelRef, messages, page }) {
@@ -395,7 +531,7 @@ async function callMiniMax({ modelRef, messages, page }) {
   const endpoint = `${MINIMAX_BASE_URL}/v1/messages`;
   const payload = {
     model: minimaxModelId(modelRef),
-    max_tokens: Number.parseInt(process.env.SITE_CHAT_MAX_TOKENS || "500", 10),
+    max_tokens: Number.parseInt(process.env.SITE_CHAT_MAX_TOKENS || "220", 10),
     temperature: Number.parseFloat(process.env.SITE_CHAT_TEMPERATURE || "0.2"),
     system: buildSystemPrompt(page, messages),
     messages

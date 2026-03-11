@@ -1,7 +1,10 @@
 (function siteAssistantBootstrap() {
+  window.__FLINT_SITE_ASSISTANT_ACTIVE = true;
+
   const STORAGE = {
     unlocked: "site_assistant_unlocked_v1",
     email: "site_assistant_email_v1",
+    open: "site_assistant_open_v1",
     sessionId: "site_assistant_session_id_v1",
     messages: "site_assistant_messages_v1",
     apiBase: "site_assistant_api_base_v1"
@@ -22,13 +25,14 @@
   const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const trackedControls = new Set();
   const MESSAGE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  const gateRequired = Boolean(document.getElementById("workCloud"));
   let lastPageKey = "";
 
   const state = {
-    unlocked: readBool(STORAGE.unlocked),
+    unlocked: gateRequired ? readBool(STORAGE.unlocked) : true,
     freshUnlock: false,
     gateState: "locked",
-    chatOpen: false,
+    chatOpen: readBool(STORAGE.open),
     sending: false,
     sessionId: readOrInitSessionId(),
     apiBase: resolveApiBase(),
@@ -183,6 +187,10 @@
     explicit.forEach((el) => trackedControls.add(el));
   }
 
+  function resolveChatHost() {
+    return document.querySelector(".site-wordmark, .site-nav");
+  }
+
   function setControlLocked(el, locked) {
     if (!(el instanceof HTMLElement)) return;
     if (el.dataset.siteGateManaged !== "1") {
@@ -273,22 +281,28 @@
     els.status.classList.toggle("error", Boolean(isError));
   }
 
-  function setChatOpen(open) {
+  function setChatOpen(open, options = {}) {
+    const { silent = false, skipFocus = false } = options;
     state.chatOpen = open;
     els.chatWindow.hidden = !open;
     els.chatToggle.setAttribute("aria-expanded", String(open));
+    try {
+      localStorage.setItem(STORAGE.open, open ? "1" : "0");
+    } catch {
+      // no-op
+    }
 
     if (open) {
       state.previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      emitChatCommand("open");
+      if (!silent) emitChatCommand("open");
       els.chatWindow.classList.remove("blurb-open");
       void els.chatWindow.offsetWidth;
       els.chatWindow.classList.add("blurb-open");
-      requestAnimationFrame(() => els.chatInput.focus());
+      if (!skipFocus) requestAnimationFrame(() => els.chatInput.focus());
     } else {
-      emitChatCommand("close");
+      if (!silent) emitChatCommand("close");
       const returnTarget = state.previousFocus && state.previousFocus.isConnected ? state.previousFocus : els.chatToggle;
-      returnTarget.focus();
+      if (!skipFocus) returnTarget.focus();
     }
   }
 
@@ -566,10 +580,20 @@
     chatToggle.setAttribute("aria-expanded", "false");
     chatToggle.setAttribute("aria-controls", "siteAssistantWindow");
     chatToggle.setAttribute("aria-label", "Open assistant chat");
-    chatToggle.textContent = "Chat";
+    chatToggle.textContent = "Ask Flint";
     chatToggle.hidden = true;
-    const wordmark = document.querySelector(".site-wordmark");
-    if (wordmark) wordmark.appendChild(chatToggle);
+    const chatHost = resolveChatHost();
+    if (chatHost) {
+      chatHost.classList.add("sa-chat-host");
+      if (chatHost.classList.contains("site-wordmark")) {
+        chatHost.classList.add("sa-chat-host-wordmark");
+      } else {
+        chatHost.classList.add("sa-chat-host-nav");
+      }
+      chatHost.appendChild(chatToggle);
+    } else {
+      root.appendChild(chatToggle);
+    }
 
     const workCloud = document.getElementById("workCloud");
     if (workCloud) {
@@ -619,18 +643,20 @@
       sendChatMessage(value);
     });
 
-    els.gateForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const email = String(els.gateEmail.value || "").trim();
-      if (!isValidEmail(email)) {
-        state.pendingGateError = "Enter a valid email address.";
-        updateUiForGateState();
-        emitGateState("error", { email, error: state.pendingGateError });
-        return;
-      }
-      state.pendingGateError = "";
-      submitEmailGate(email);
-    });
+    if (gateRequired) {
+      els.gateForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const email = String(els.gateEmail.value || "").trim();
+        if (!isValidEmail(email)) {
+          state.pendingGateError = "Enter a valid email address.";
+          updateUiForGateState();
+          emitGateState("error", { email, error: state.pendingGateError });
+          return;
+        }
+        state.pendingGateError = "";
+        submitEmailGate(email);
+      });
+    }
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && state.chatOpen) {
@@ -638,20 +664,25 @@
       }
     });
 
-    document.addEventListener("click", (event) => {
-      if (state.unlocked) return;
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const blocked = target.closest("[data-gated-control]");
-      if (!blocked) return;
-      if (els.root && els.root.contains(blocked)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      requestAnimationFrame(() => els.gateEmail.focus());
-    }, true);
+    if (gateRequired) {
+      document.addEventListener("click", (event) => {
+        if (state.unlocked) return;
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const blocked = target.closest("[data-gated-control]");
+        if (!blocked) return;
+        if (els.root && els.root.contains(blocked)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        requestAnimationFrame(() => els.gateEmail.focus());
+      }, true);
+    }
   }
 
   function init() {
+    const legacyChatRoot = document.getElementById("flintChatRoot");
+    if (legacyChatRoot) legacyChatRoot.remove();
+
     buildUi();
     renderMessages();
     bindUi();
@@ -664,6 +695,9 @@
     }
 
     updateUiForGateState();
+    if (state.unlocked && state.chatOpen) {
+      setChatOpen(true, { silent: true, skipFocus: true });
+    }
     bindNavigationObserver();
   }
 

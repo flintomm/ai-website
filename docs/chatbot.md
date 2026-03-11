@@ -2,7 +2,7 @@
 
 ## Overview
 
-This website uses a floating chatbot widget on every page. The frontend calls local backend routes, and the backend proxies to MiniMax using `MINIMAX_API_KEY` from environment variables.
+This website uses a unified menu-bar chatbot on every page. The frontend calls local backend routes, and the backend proxies to MiniMax using `MINIMAX_API_KEY` from environment variables.
 
 ## Routes
 
@@ -29,6 +29,7 @@ This website uses a floating chatbot widget on every page. The frontend calls lo
 - `SITE_CHAT_ALLOWED_ORIGINS` (optional CORS allowlist)
 - `SITE_CHAT_RATE_LIMIT_MAX` (optional, default `30` requests/minute per IP)
 - `SITE_CHAT_DEFAULT_MODEL` (optional, default `minimax/MiniMax-M2.1`)
+- `SITE_CHAT_MAX_TOKENS` (optional, default `220`)
 
 ## Security notes
 
@@ -43,11 +44,15 @@ This website uses a floating chatbot widget on every page. The frontend calls lo
 - Prompt composition includes:
   - page metadata (`url`, `title`, `path`)
   - deterministic destination mapping
-  - concise curated knowledge snippets from:
+  - concierge policy snippets from:
     - `/Users/flint/Documents/AI Website/docs/flint-concierge-guide.md`
+  - expanded site knowledge snippets from:
+    - `/Users/flint/Documents/AI Website/docs/flint-site-knowledge.md`
 - Behavior policy:
   - reactive-first assistance
+  - brief responses (short, direct, token-conscious)
   - soft hotel metaphor usage
+  - no unsolicited follow-up suggestions (unless visitor explicitly asks)
   - real page/project names only (no invented destinations)
   - owner handoff suggestions only for explicit intent triggers
 

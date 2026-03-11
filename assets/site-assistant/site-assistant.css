@@ -11,6 +11,10 @@
   --sa-touch-target: 44px;
 }
 
+.sa-chat-host {
+  position: relative;
+}
+
 .sa-header-btn {
   position: absolute;
   left: 50%;
@@ -26,6 +30,7 @@
   min-height: var(--sa-touch-target);
   cursor: pointer;
   opacity: 0.7;
+  z-index: 2;
   transition: opacity 0.15s, color 0.15s, border-color 0.15s;
 }
 
@@ -428,6 +433,12 @@
 }
 
 @media (max-width: 640px) {
+  .sa-header-btn {
+    font-size: 0.56rem;
+    letter-spacing: 0.12em;
+    padding: 0.38rem 0.68rem;
+  }
+
   .site-assistant-window {
     width: calc(100vw - 1.4rem);
     top: 3rem;
