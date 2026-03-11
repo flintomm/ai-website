@@ -745,6 +745,28 @@
     let videoExpanded  = false;
     let bgClickHandler = null;
 
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    function jumpToScrollPosition(y) {
+      const html = document.documentElement;
+      const body = document.body;
+      const prevHtmlBehavior = html.style.scrollBehavior;
+      const prevBodyBehavior = body ? body.style.scrollBehavior : '';
+
+      html.style.scrollBehavior = 'auto';
+      if (body) body.style.scrollBehavior = 'auto';
+
+      window.scrollTo({ top: y, left: 0, behavior: 'auto' });
+      targetScrollY = y;
+
+      requestAnimationFrame(() => {
+        html.style.scrollBehavior = prevHtmlBehavior;
+        if (body) body.style.scrollBehavior = prevBodyBehavior;
+      });
+    }
+
     function persistScrollPosition() {
       sessionStorage.setItem(SCROLL_KEY, String(Math.round(window.scrollY)));
     }
@@ -757,8 +779,7 @@
         const target = document.querySelector(hash);
         if (target) {
           const y = Math.min(Math.max(target.offsetTop, 0), scrollLimit);
-          window.scrollTo(0, y);
-          targetScrollY = y;
+          jumpToScrollPosition(y);
           return;
         }
       }
@@ -768,8 +789,7 @@
       const saved = sessionStorage.getItem(SCROLL_KEY);
       if ((navType === 'back_forward' || navType === 'reload') && saved !== null) {
         const y = Math.min(Math.max(Number(saved) || 0, 0), scrollLimit);
-        window.scrollTo(0, y);
-        targetScrollY = y;
+        jumpToScrollPosition(y);
       }
     }
 
