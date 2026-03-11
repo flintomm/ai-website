@@ -341,9 +341,14 @@
 
     state.homeDocked = nextDocked;
 
+    if (els.homeDockSection) {
+      els.homeDockSection.classList.toggle("sa-work-active", nextDocked);
+    }
+
     if (els.host && els.host.classList.contains("site-wordmark")) {
       els.host.classList.toggle("sa-home-docked-bottom", nextDocked);
     }
+    document.body.classList.toggle("sa-work-active", nextDocked);
     document.body.classList.toggle("sa-home-docked-bottom", nextDocked);
   }
 
@@ -351,8 +356,8 @@
     if (!els.homeDockSection || !els.host || !els.host.classList.contains("site-wordmark")) return;
 
     const rect = els.homeDockSection.getBoundingClientRect();
-    const viewportFocus = window.innerHeight * 0.5;
-    const workActive = rect.top <= viewportFocus && rect.bottom >= viewportFocus;
+    const entryThreshold = window.innerHeight * 0.34;
+    const workActive = rect.top <= entryThreshold && rect.bottom > 0;
     setHomeDocked(workActive);
   }
 

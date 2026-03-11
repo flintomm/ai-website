@@ -492,7 +492,7 @@
 }
 
 .site-wordmark.sa-home-docked-bottom ~ .scroll-container #section-4 {
-  padding-bottom: calc(max(8vh, 6.4rem) + env(safe-area-inset-bottom));
+  padding-bottom: calc(max(10vh, 8rem) + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 900px) {
