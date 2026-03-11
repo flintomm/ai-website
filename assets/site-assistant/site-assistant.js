@@ -4,7 +4,6 @@
   const STORAGE = {
     unlocked: "site_assistant_unlocked_v1",
     email: "site_assistant_email_v1",
-    open: "site_assistant_open_v1",
     sessionId: "site_assistant_session_id_v1",
     messages: "site_assistant_messages_v1",
     apiBase: "site_assistant_api_base_v1"
@@ -32,13 +31,11 @@
     unlocked: gateRequired ? readBool(STORAGE.unlocked) : true,
     freshUnlock: false,
     gateState: "locked",
-    chatOpen: readBool(STORAGE.open),
     sending: false,
     sessionId: readOrInitSessionId(),
     apiBase: resolveApiBase(),
     messages: readMessages(),
     currentPage: buildPageView(),
-    previousFocus: null,
     pendingGateError: ""
   };
 
@@ -235,26 +232,29 @@
     trackedControls.forEach((el) => setControlLocked(el, locked));
   }
 
+  function persistMessages() {
+    try {
+      localStorage.setItem(STORAGE.messages, JSON.stringify({
+        savedAt: Date.now(),
+        messages: state.messages
+      }));
+    } catch {
+      // no-op
+    }
+  }
+
   function addMessage(role, content, persist) {
     const safeRole = role === "user" ? "user" : "assistant";
-    const item = document.createElement("li");
-    item.className = `site-assistant-bubble ${safeRole}`;
-    item.textContent = String(content || "");
-    els.messageList.appendChild(item);
-    els.messageList.scrollTop = els.messageList.scrollHeight;
+    const normalized = String(content || "").trim();
+    if (!normalized) return;
 
     if (persist) {
-      state.messages.push({ role: safeRole, content: String(content || "") });
+      state.messages.push({ role: safeRole, content: normalized });
       state.messages = state.messages.slice(-30);
-      try {
-        localStorage.setItem(STORAGE.messages, JSON.stringify({
-          savedAt: Date.now(),
-          messages: state.messages
-        }));
-      } catch {
-        // no-op
-      }
+      persistMessages();
     }
+
+    renderTranscript();
   }
 
   function clearMessages() {
@@ -264,49 +264,32 @@
     } catch {
       // no-op
     }
-    renderMessages();
+    renderTranscript();
   }
 
-  function renderMessages() {
-    els.messageList.innerHTML = "";
+  function renderTranscript() {
+    if (!els.output) return;
+
     if (state.messages.length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "site-assistant-empty";
-      empty.textContent = "Type here to start chatting with Flint";
-      els.messageList.appendChild(empty);
+      els.output.dataset.empty = "1";
+      els.output.textContent = "flint> Waiting for your first command.";
       return;
     }
-    state.messages.forEach((m) => addMessage(m.role, m.content, false));
+
+    const lines = state.messages.slice(-6).map((message) => {
+      const prefix = message.role === "user" ? "you$" : "flint>";
+      return `${prefix} ${message.content}`;
+    });
+
+    els.output.dataset.empty = "0";
+    els.output.textContent = lines.join("\n");
+    els.output.scrollTop = els.output.scrollHeight;
   }
 
   function setStatus(text, isError) {
+    if (!els.status) return;
     els.status.textContent = text;
     els.status.classList.toggle("error", Boolean(isError));
-  }
-
-  function setChatOpen(open, options = {}) {
-    const { silent = false, skipFocus = false } = options;
-    state.chatOpen = open;
-    els.chatWindow.hidden = !open;
-    els.chatToggle.setAttribute("aria-expanded", String(open));
-    try {
-      localStorage.setItem(STORAGE.open, open ? "1" : "0");
-    } catch {
-      // no-op
-    }
-
-    if (open) {
-      state.previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      if (!silent) emitChatCommand("open");
-      els.chatWindow.classList.remove("blurb-open");
-      void els.chatWindow.offsetWidth;
-      els.chatWindow.classList.add("blurb-open");
-      if (!skipFocus) requestAnimationFrame(() => els.chatInput.focus());
-    } else {
-      if (!silent) emitChatCommand("close");
-      const returnTarget = state.previousFocus && state.previousFocus.isConnected ? state.previousFocus : els.chatToggle;
-      if (!skipFocus) returnTarget.focus();
-    }
   }
 
   async function sendChatMessage(question) {
@@ -316,7 +299,8 @@
     state.sending = true;
     els.chatSend.disabled = true;
     addMessage("user", trimmed, true);
-    setStatus("Thinking...", false);
+    setStatus("Running command...", false);
+    emitChatCommand("submit");
 
     try {
       const response = await fetch(toApiUrl("/api/chat/message"), {
@@ -382,8 +366,8 @@
       // no-op
     }
 
-    els.chatToggle.classList.add("reveal");
-    window.setTimeout(() => els.chatToggle.classList.remove("reveal"), 320);
+    els.chatBar.classList.add("reveal");
+    window.setTimeout(() => els.chatBar.classList.remove("reveal"), 320);
   }
 
   function playVaultAnimation(onComplete) {
@@ -397,10 +381,10 @@
 
   function triggerTagGlow() {
     if (reducedMotion) return;
-    els.chatToggle.classList.remove("sa-glow");
-    void els.chatToggle.offsetWidth; // reflow to restart animation
-    els.chatToggle.classList.add("sa-glow");
-    window.setTimeout(() => els.chatToggle.classList.remove("sa-glow"), 1700);
+    els.chatBar.classList.remove("sa-glow");
+    void els.chatBar.offsetWidth;
+    els.chatBar.classList.add("sa-glow");
+    window.setTimeout(() => els.chatBar.classList.remove("sa-glow"), 1700);
   }
 
   function revealButtons() {
@@ -415,7 +399,7 @@
     const locked = !state.unlocked;
     applyGateToControls(locked);
 
-    els.chatToggle.hidden = locked;
+    els.chatBar.hidden = locked;
 
     if (locked) {
       els.gate.hidden = false;
@@ -424,7 +408,6 @@
       } else {
         els.gateError.textContent = "";
       }
-      if (state.chatOpen) setChatOpen(false);
       requestAnimationFrame(() => els.gateEmail.focus());
       return;
     }
@@ -434,7 +417,7 @@
       els.gate.hidden = false;
       playVaultAnimation(() => {
         els.gate.hidden = true;
-        setChatOpen(true);
+        requestAnimationFrame(() => els.chatInput.focus());
         triggerTagGlow();
       });
       revealButtons();
@@ -450,27 +433,32 @@
     root.id = "siteAssistantRoot";
     root.setAttribute("data-site-chat-owned", "1");
 
+    const chatBar = document.createElement("section");
+    chatBar.className = "site-assistant-cli";
+    chatBar.id = "siteAssistantCli";
+    chatBar.hidden = true;
 
-    const chatWindow = document.createElement("section");
-    chatWindow.className = "site-assistant-window";
-    chatWindow.id = "siteAssistantWindow";
-    chatWindow.setAttribute("role", "dialog");
-    chatWindow.setAttribute("aria-modal", "false");
-    chatWindow.setAttribute("aria-label", "Site assistant chat window");
-    chatWindow.hidden = true;
+    const composer = document.createElement("form");
+    composer.className = "site-assistant-cli-form";
 
-    const head = document.createElement("header");
-    head.className = "site-assistant-head";
+    const prompt = document.createElement("span");
+    prompt.className = "site-assistant-cli-prompt";
+    prompt.setAttribute("aria-hidden", "true");
+    prompt.textContent = "flint@site:~$";
 
-    const title = document.createElement("h2");
-    title.className = "site-assistant-title";
-    title.textContent = "Site Assistant";
+    const input = document.createElement("input");
+    input.id = "siteAssistantInput";
+    input.className = "site-assistant-cli-input";
+    input.type = "text";
+    input.placeholder = "ask-flint --about \"your idea\"";
+    input.maxLength = 4000;
+    input.autocomplete = "off";
+    input.setAttribute("aria-label", "Ask Flint");
 
-    const close = document.createElement("button");
-    close.type = "button";
-    close.className = "site-assistant-close";
-    close.setAttribute("aria-label", "Close assistant chat");
-    close.textContent = "\u00d7";
+    const send = document.createElement("button");
+    send.type = "submit";
+    send.className = "site-assistant-send";
+    send.textContent = "Run";
 
     const clear = document.createElement("button");
     clear.type = "button";
@@ -478,56 +466,41 @@
     clear.setAttribute("aria-label", "Clear chat history");
     clear.textContent = "Clear";
 
-    const headActions = document.createElement("div");
-    headActions.className = "site-assistant-head-actions";
-    headActions.appendChild(clear);
-    headActions.appendChild(close);
-
-    head.appendChild(title);
-    head.appendChild(headActions);
-
-    const messageList = document.createElement("ul");
-    messageList.className = "site-assistant-messages";
-    messageList.id = "siteAssistantMessages";
-
-    const composer = document.createElement("form");
-    composer.className = "site-assistant-form";
-
-    const inputLabel = document.createElement("label");
-    inputLabel.setAttribute("for", "siteAssistantInput");
-    inputLabel.textContent = "Message";
-
-    const row = document.createElement("div");
-    row.className = "site-assistant-row";
-
-    const input = document.createElement("input");
-    input.id = "siteAssistantInput";
-    input.className = "site-assistant-input";
-    input.type = "text";
-    input.placeholder = "Ask Flint anything\u2026";
-    input.maxLength = 4000;
-    input.autocomplete = "off";
-
-    const send = document.createElement("button");
-    send.type = "submit";
-    send.className = "site-assistant-send";
-    send.textContent = "Send";
-
-    row.appendChild(input);
-    row.appendChild(send);
+    composer.appendChild(prompt);
+    composer.appendChild(input);
+    composer.appendChild(send);
+    composer.appendChild(clear);
 
     const status = document.createElement("p");
     status.className = "site-assistant-status";
     status.id = "siteAssistantStatus";
     status.textContent = "Ready";
 
-    composer.appendChild(inputLabel);
-    composer.appendChild(row);
-    composer.appendChild(status);
+    const output = document.createElement("pre");
+    output.className = "site-assistant-cli-output";
+    output.id = "siteAssistantOutput";
+    output.dataset.empty = "1";
+    output.textContent = "flint> Waiting for your first command.";
 
-    chatWindow.appendChild(head);
-    chatWindow.appendChild(messageList);
-    chatWindow.appendChild(composer);
+    chatBar.appendChild(composer);
+    chatBar.appendChild(status);
+    chatBar.appendChild(output);
+
+    document.body.appendChild(root);
+
+    const chatHost = resolveChatHost();
+    if (chatHost) {
+      chatHost.classList.add("sa-chat-host");
+      if (chatHost.classList.contains("site-wordmark")) {
+        chatHost.classList.add("sa-chat-host-wordmark");
+      } else {
+        chatHost.classList.add("sa-chat-host-nav");
+      }
+      chatHost.appendChild(chatBar);
+    } else {
+      chatBar.classList.add("site-assistant-cli-fallback");
+      root.appendChild(chatBar);
+    }
 
     const gate = document.createElement("section");
     gate.className = "site-email-gate";
@@ -542,6 +515,12 @@
     const gateTitle = document.createElement("h2");
     gateTitle.id = "siteEmailGateTitle";
     gateTitle.className = "site-email-gate-title";
+    gateTitle.textContent = "Unlock Flint";
+
+    const gateCopy = document.createElement("p");
+    gateCopy.className = "site-email-gate-copy";
+    gateCopy.textContent = "Enter your email to unlock the project menu and assistant.";
+
     const gateForm = document.createElement("form");
     gateForm.className = "site-email-gate-form";
 
@@ -570,33 +549,10 @@
     gateForm.appendChild(gateProgress);
     gateForm.appendChild(gateError);
 
+    gatePanel.appendChild(gateTitle);
+    gatePanel.appendChild(gateCopy);
     gatePanel.appendChild(gateForm);
     gate.appendChild(gatePanel);
-
-    root.appendChild(chatWindow);
-
-    document.body.appendChild(root);
-
-    const chatToggle = document.createElement("button");
-    chatToggle.type = "button";
-    chatToggle.className = "sa-header-btn";
-    chatToggle.setAttribute("aria-expanded", "false");
-    chatToggle.setAttribute("aria-controls", "siteAssistantWindow");
-    chatToggle.setAttribute("aria-label", "Open assistant chat");
-    chatToggle.textContent = "Ask Flint";
-    chatToggle.hidden = true;
-    const chatHost = resolveChatHost();
-    if (chatHost) {
-      chatHost.classList.add("sa-chat-host");
-      if (chatHost.classList.contains("site-wordmark")) {
-        chatHost.classList.add("sa-chat-host-wordmark");
-      } else {
-        chatHost.classList.add("sa-chat-host-nav");
-      }
-      chatHost.appendChild(chatToggle);
-    } else {
-      root.appendChild(chatToggle);
-    }
 
     const workCloud = document.getElementById("workCloud");
     if (workCloud) {
@@ -607,15 +563,13 @@
     }
 
     els.root = root;
-    els.chatToggle = chatToggle;
-    els.chatWindow = chatWindow;
-    els.chatClear = clear;
-    els.chatClose = close;
-    els.messageList = messageList;
+    els.chatBar = chatBar;
     els.chatForm = composer;
     els.chatInput = input;
     els.chatSend = send;
+    els.chatClear = clear;
     els.status = status;
+    els.output = output;
     els.gate = gate;
     els.gateForm = gateForm;
     els.gateEmail = gateEmail;
@@ -625,19 +579,12 @@
   }
 
   function bindUi() {
-    els.chatToggle.addEventListener("click", () => {
-      const next = !state.chatOpen;
-      emitChatCommand("toggle");
-      setChatOpen(next);
-    });
-
     els.chatClear.addEventListener("click", () => {
       clearMessages();
-      setStatus("Chat cleared", false);
-      if (state.chatOpen) requestAnimationFrame(() => els.chatInput.focus());
+      setStatus("History cleared", false);
+      emitChatCommand("clear");
+      requestAnimationFrame(() => els.chatInput.focus());
     });
-
-    els.chatClose.addEventListener("click", () => setChatOpen(false));
 
     els.chatForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -661,12 +608,6 @@
       });
     }
 
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && state.chatOpen) {
-        setChatOpen(false);
-      }
-    });
-
     if (gateRequired) {
       document.addEventListener("click", (event) => {
         if (state.unlocked) return;
@@ -687,7 +628,8 @@
     if (legacyChatRoot) legacyChatRoot.remove();
 
     buildUi();
-    renderMessages();
+    renderTranscript();
+    setStatus("Ready", false);
     bindUi();
     collectGatedControls();
 
@@ -698,9 +640,6 @@
     }
 
     updateUiForGateState();
-    if (state.unlocked && state.chatOpen) {
-      setChatOpen(true, { silent: true, skipFocus: true });
-    }
     bindNavigationObserver();
   }
 
