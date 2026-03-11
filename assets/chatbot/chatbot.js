@@ -14,6 +14,7 @@
   }());
 
   const MAX_MESSAGES = 20;
+  const MESSAGE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   const state = {
     open: readBool(STORAGE.open),
     sending: false,
@@ -50,9 +51,20 @@
   function readMessages() {
     try {
       const raw = localStorage.getItem(STORAGE.messages);
-      const parsed = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(parsed)) return [];
-      return parsed
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      const now = Date.now();
+      const savedAt = Number(parsed?.savedAt || 0);
+      const fromObject = Array.isArray(parsed?.messages) ? parsed.messages : null;
+      const fromArray = Array.isArray(parsed) ? parsed : null;
+      const source = fromObject || fromArray || [];
+
+      if (savedAt > 0 && (now - savedAt) > MESSAGE_TTL_MS) {
+        localStorage.removeItem(STORAGE.messages);
+        return [];
+      }
+
+      return source
         .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
         .slice(-MAX_MESSAGES);
     } catch {
@@ -73,10 +85,23 @@
 
   function saveMessages() {
     try {
-      localStorage.setItem(STORAGE.messages, JSON.stringify(state.messages.slice(-MAX_MESSAGES)));
+      localStorage.setItem(STORAGE.messages, JSON.stringify({
+        savedAt: Date.now(),
+        messages: state.messages.slice(-MAX_MESSAGES)
+      }));
     } catch {
       // no-op
     }
+  }
+
+  function clearMessages() {
+    state.messages = [];
+    try {
+      localStorage.removeItem(STORAGE.messages);
+    } catch {
+      // no-op
+    }
+    renderMessages();
   }
 
   function setStatus(text, isError) {
@@ -213,8 +238,19 @@
     close.setAttribute("aria-label", "Close chat");
     close.textContent = "x";
 
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "flint-chat-clear";
+    clear.setAttribute("aria-label", "Clear chat history");
+    clear.textContent = "Clear";
+
+    const headActions = document.createElement("div");
+    headActions.className = "flint-chat-head-actions";
+    headActions.appendChild(clear);
+    headActions.appendChild(close);
+
     head.appendChild(title);
-    head.appendChild(close);
+    head.appendChild(headActions);
 
     const messages = document.createElement("ul");
     messages.className = "flint-chat-messages";
@@ -264,6 +300,7 @@
     els.root = root;
     els.launcher = launcher;
     els.panel = panel;
+    els.clear = clear;
     els.close = close;
     els.messages = messages;
     els.form = form;
@@ -274,6 +311,11 @@
 
   function bindUi() {
     els.launcher.addEventListener("click", () => setOpen(!state.open));
+    els.clear.addEventListener("click", () => {
+      clearMessages();
+      setStatus("Chat cleared", false);
+      if (state.open) requestAnimationFrame(() => els.input.focus());
+    });
     els.close.addEventListener("click", () => setOpen(false));
 
     els.form.addEventListener("submit", (event) => {

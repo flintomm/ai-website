@@ -21,6 +21,7 @@
   }());
   const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const trackedControls = new Set();
+  const MESSAGE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   let lastPageKey = "";
 
   const state = {
@@ -50,9 +51,20 @@
   function readMessages() {
     try {
       const raw = localStorage.getItem(STORAGE.messages);
-      const parsed = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(parsed)) return [];
-      return parsed.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string").slice(-30);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      const now = Date.now();
+      const savedAt = Number(parsed?.savedAt || 0);
+      const fromObject = Array.isArray(parsed?.messages) ? parsed.messages : null;
+      const fromArray = Array.isArray(parsed) ? parsed : null;
+      const source = fromObject || fromArray || [];
+
+      if (savedAt > 0 && (now - savedAt) > MESSAGE_TTL_MS) {
+        localStorage.removeItem(STORAGE.messages);
+        return [];
+      }
+
+      return source.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string").slice(-30);
     } catch {
       return [];
     }
@@ -227,11 +239,24 @@
       state.messages.push({ role: safeRole, content: String(content || "") });
       state.messages = state.messages.slice(-30);
       try {
-        localStorage.setItem(STORAGE.messages, JSON.stringify(state.messages));
+        localStorage.setItem(STORAGE.messages, JSON.stringify({
+          savedAt: Date.now(),
+          messages: state.messages
+        }));
       } catch {
         // no-op
       }
     }
+  }
+
+  function clearMessages() {
+    state.messages = [];
+    try {
+      localStorage.removeItem(STORAGE.messages);
+    } catch {
+      // no-op
+    }
+    renderMessages();
   }
 
   function renderMessages() {
@@ -430,8 +455,19 @@
     close.setAttribute("aria-label", "Close assistant chat");
     close.textContent = "x";
 
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "site-assistant-clear";
+    clear.setAttribute("aria-label", "Clear chat history");
+    clear.textContent = "Clear";
+
+    const headActions = document.createElement("div");
+    headActions.className = "site-assistant-head-actions";
+    headActions.appendChild(clear);
+    headActions.appendChild(close);
+
     head.appendChild(title);
-    head.appendChild(close);
+    head.appendChild(headActions);
 
     const messageList = document.createElement("ul");
     messageList.className = "site-assistant-messages";
@@ -546,6 +582,7 @@
     els.root = root;
     els.chatToggle = chatToggle;
     els.chatWindow = chatWindow;
+    els.chatClear = clear;
     els.chatClose = close;
     els.messageList = messageList;
     els.chatForm = composer;
@@ -565,6 +602,12 @@
       const next = !state.chatOpen;
       emitChatCommand("toggle");
       setChatOpen(next);
+    });
+
+    els.chatClear.addEventListener("click", () => {
+      clearMessages();
+      setStatus("Chat cleared", false);
+      if (state.chatOpen) requestAnimationFrame(() => els.chatInput.focus());
     });
 
     els.chatClose.addEventListener("click", () => setChatOpen(false));

@@ -82,12 +82,38 @@
 
 .site-assistant-head {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: 0.3rem 0.4rem 0;
 }
 
 .site-assistant-title {
   display: none;
+}
+
+.site-assistant-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.site-assistant-clear {
+  border: 1px solid var(--sa-line);
+  background: transparent;
+  color: var(--sa-muted);
+  min-height: 34px;
+  padding: 0 0.52rem;
+  font: 700 0.56rem/1 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.site-assistant-clear:hover,
+.site-assistant-clear:focus-visible {
+  color: var(--sa-text);
+  border-color: var(--sa-line-hi);
+  outline: none;
 }
 
 .site-assistant-close {
@@ -408,6 +434,7 @@
     max-height: min(60vh, 340px);
   }
   .site-assistant-row { gap: 0.35rem; }
+  .site-assistant-clear { font-size: 0.52rem; padding: 0 0.45rem; }
   .site-email-gate-panel { padding: 1rem; }
   .site-email-gate-form input { min-width: 0; width: 100%; }
   .site-email-gate-submit { width: 100%; }

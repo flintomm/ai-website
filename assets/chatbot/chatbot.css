@@ -61,11 +61,36 @@
   border-bottom: 1px solid var(--cb-border);
 }
 
+.flint-chat-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .flint-chat-title {
   margin: 0;
   font: 700 0.67rem/1 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
   letter-spacing: 0.15em;
   text-transform: uppercase;
+}
+
+.flint-chat-clear {
+  border: 1px solid var(--cb-border);
+  background: transparent;
+  color: var(--cb-muted);
+  min-height: 34px;
+  padding: 0 0.58rem;
+  font: 700 0.58rem/1 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.flint-chat-clear:hover,
+.flint-chat-clear:focus-visible {
+  color: var(--cb-text);
+  border-color: var(--cb-border-hi);
+  outline: none;
 }
 
 .flint-chat-close {
@@ -199,6 +224,7 @@
   }
   .flint-chat-head { padding: 0.55rem 0.6rem; }
   .flint-chat-title { letter-spacing: 0.11em; }
+  .flint-chat-clear { font-size: 0.55rem; padding: 0 0.48rem; }
   .flint-chat-row { gap: 0.35rem; }
   .flint-chat-send { padding: 0 0.8rem; }
 
