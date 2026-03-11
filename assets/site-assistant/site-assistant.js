@@ -262,7 +262,7 @@
   function renderMessages() {
     els.messageList.innerHTML = "";
     if (state.messages.length === 0) {
-      addMessage("assistant", "Hi! I'm Flint. Tommy said you might need some help here, so let me know if anything comes up.", false);
+      addMessage("assistant", "Welcome in. I'm Flint, Tommy's AI assistant and your host. Tell me what you're looking for, and I'll point you to the right stop.", false);
       return;
     }
     state.messages.forEach((m) => addMessage(m.role, m.content, false));

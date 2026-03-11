@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createReadStream, statSync } from "node:fs";
+import { createReadStream, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
@@ -49,6 +49,192 @@ const MIME = {
   ".mp4": "video/mp4",
   ".txt": "text/plain; charset=utf-8"
 };
+
+const CONCIERGE_GUIDE_PATH = path.join(__dirname, "docs", "flint-concierge-guide.md");
+const CONCIERGE_SECTION_FALLBACK = {
+  owner_and_host: "Tommy is the Owner of this website. Flint is Tommy's AI assistant and concierge host for visitors.",
+  style_policy: "Stay concise, warm, and practical. Keep hotel metaphor light (1-2 phrases max) and always use real page names/paths.",
+  guidance_policy: "When users ask where to go, suggest 1-3 relevant destinations with real labels and paths.",
+  handoff_policy: "Offer an owner handoff only for explicit hiring/collaboration/contact intent or repeated confusion."
+};
+const DESTINATIONS = [
+  {
+    key: "lobby",
+    label: "Lobby (Home)",
+    path: "/",
+    aliases: ["/", "/index.html"],
+    sectionId: "destination_lobby"
+  },
+  {
+    key: "creative_corner",
+    label: "Creative Corner",
+    path: "/pages/creative/creative-work.html",
+    aliases: ["/pages/creative/creative-work.html", "/pages/creative/index.html"],
+    sectionId: "destination_creative"
+  },
+  {
+    key: "roster_architect",
+    label: "Roster Architect",
+    path: "/pages/dashboards/roster-architect/roster-architect.html",
+    aliases: [
+      "/pages/dashboards/roster-architect/roster-architect.html",
+      "/pages/dashboards/roster-architect/index.html"
+    ],
+    sectionId: "destination_roster_architect"
+  },
+  {
+    key: "budget_calculator",
+    label: "Budget Calculator",
+    path: "/pages/dashboards/budget-calculator/budget-calculator.html",
+    aliases: [
+      "/pages/dashboards/budget-calculator/budget-calculator.html",
+      "/pages/dashboards/budget-calculator/index.html"
+    ],
+    sectionId: "destination_budget_calculator"
+  },
+  {
+    key: "tower_defense",
+    label: "Tower Defense",
+    path: "/pages/games/tower-defense.html",
+    aliases: ["/pages/games/tower-defense.html", "/pages/games/index.html"],
+    sectionId: "destination_tower_defense"
+  },
+  {
+    key: "board_arcade",
+    label: "Board Arcade",
+    path: "/pages/games/board-hub.html",
+    aliases: ["/pages/games/board-hub.html"],
+    sectionId: "destination_board_arcade"
+  }
+];
+const CONCIERGE_SECTIONS = loadConciergeSections();
+
+function parseConciergeSections(raw) {
+  const sections = {};
+  let currentKey = null;
+  let currentLines = [];
+
+  for (const line of String(raw || "").split("\n")) {
+    const match = line.match(/^###\s+([a-z0-9_-]+)\s*$/i);
+    if (match) {
+      if (currentKey) sections[currentKey] = currentLines.join("\n").trim();
+      currentKey = match[1].toLowerCase();
+      currentLines = [];
+      continue;
+    }
+    if (currentKey) currentLines.push(line);
+  }
+
+  if (currentKey) sections[currentKey] = currentLines.join("\n").trim();
+  return sections;
+}
+
+function loadConciergeSections() {
+  try {
+    const raw = readFileSync(CONCIERGE_GUIDE_PATH, "utf8");
+    const parsed = parseConciergeSections(raw);
+    return Object.keys(parsed).length > 0 ? parsed : { ...CONCIERGE_SECTION_FALLBACK };
+  } catch {
+    return { ...CONCIERGE_SECTION_FALLBACK };
+  }
+}
+
+function conciergeSection(id) {
+  const key = String(id || "").toLowerCase();
+  return String(CONCIERGE_SECTIONS[key] || CONCIERGE_SECTION_FALLBACK[key] || "").trim();
+}
+
+function normalizePath(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "/";
+  return raw.startsWith("/") ? raw : `/${raw}`;
+}
+
+function latestUserMessage(messages) {
+  for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
+    const msg = messages[i];
+    if (msg?.role === "user" && typeof msg?.content === "string") {
+      return msg.content.trim();
+    }
+  }
+  return "";
+}
+
+function isGuidanceIntent(text) {
+  const value = String(text || "").toLowerCase();
+  if (!value) return false;
+  const patterns = [
+    /\bwhere\b.+\b(start|go|begin)\b/,
+    /\bwhat\b.+\b(check out|explore|visit|look at)\b/,
+    /\bwhat should i\b/,
+    /\brecommend\b/,
+    /\bnext step\b/,
+    /\btour\b/,
+    /\bnavigate\b/
+  ];
+  return patterns.some((pattern) => pattern.test(value));
+}
+
+function isHandoffIntent(text) {
+  const value = String(text || "").toLowerCase();
+  if (!value) return false;
+  const patterns = [
+    /\bhire\b/,
+    /\bcollab(?:orate|oration)?\b/,
+    /\bproject inquiry\b/,
+    /\bcontact tommy\b/,
+    /\btalk to tommy\b/,
+    /\bproposal\b/,
+    /\bquote\b/,
+    /\bpricing\b/,
+    /\bi('| a)m stuck\b/,
+    /\bconfused\b/,
+    /\bnot sure\b/
+  ];
+  return patterns.some((pattern) => pattern.test(value));
+}
+
+function resolveDestination(page) {
+  const currentPath = normalizePath(page?.path || "/");
+  const exact = DESTINATIONS.find((destination) => destination.aliases.includes(currentPath));
+  if (exact) return exact;
+
+  const byPrefix = DESTINATIONS.find((destination) => {
+    const alias = destination.aliases.find((item) => item !== "/" && currentPath.startsWith(item.replace(/\/index\.html$/, "")));
+    return Boolean(alias);
+  });
+  return byPrefix || DESTINATIONS[0];
+}
+
+function destinationSuggestions(currentDestination, limit = 3) {
+  return DESTINATIONS
+    .filter((destination) => destination.key !== currentDestination.key)
+    .slice(0, limit);
+}
+
+function conciergeSnippets({ destination, guidanceIntent, handoffIntent, maxSnippets = 3, maxChars = 1700 }) {
+  const selected = [];
+  const selectedIds = [
+    "owner_and_host",
+    "style_policy",
+    destination.sectionId
+  ];
+
+  if (guidanceIntent) selectedIds.push("guidance_policy");
+  if (handoffIntent) selectedIds.push("handoff_policy");
+
+  let usedChars = 0;
+  for (const id of selectedIds) {
+    const text = conciergeSection(id);
+    if (!text) continue;
+    const snippet = `[${id}] ${text}`;
+    if ((usedChars + snippet.length) > maxChars) continue;
+    selected.push(snippet);
+    usedChars += snippet.length;
+    if (selected.length >= maxSnippets) break;
+  }
+  return selected;
+}
 
 function sendJson(res, status, body) {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -167,16 +353,36 @@ function parseAssistantText(data) {
     .trim();
 }
 
-function buildSystemPrompt(page) {
+function buildSystemPrompt(page, messages) {
   const context = [];
   if (page?.url) context.push(`URL: ${page.url}`);
   if (page?.title) context.push(`Title: ${page.title}`);
   if (page?.path) context.push(`Path: ${page.path}`);
 
+  const userText = latestUserMessage(messages);
+  const guidanceIntent = isGuidanceIntent(userText);
+  const handoffIntent = isHandoffIntent(userText);
+  const currentDestination = resolveDestination(page);
+  const nearbyDestinations = destinationSuggestions(currentDestination, 3);
+  const snippets = conciergeSnippets({
+    destination: currentDestination,
+    guidanceIntent,
+    handoffIntent
+  });
+
   return [
-    "You are Flint, a concise website assistant.",
-    "Use only the provided page metadata and user messages for context.",
+    "You are Flint, Tommy's AI assistant and concierge host for this website.",
+    "Treat the website like a hotel metaphor lightly (max 1-2 phrases per response).",
+    "Be warm, concise, and practical. Default to reactive behavior: answer directly unless asked for guidance.",
+    "When recommending where to go, use real page/project names and explicit real paths.",
+    "Never invent rooms, pages, tools, features, or private owner information.",
     "Do not claim to read hidden page content.",
+    `Guidance request detected: ${guidanceIntent ? "yes" : "no"}.`,
+    `Owner handoff trigger detected: ${handoffIntent ? "yes" : "no"}.`,
+    `Current destination: ${currentDestination.label} (${currentDestination.path}).`,
+    `Nearby destinations:\n${nearbyDestinations.map((destination) => `- ${destination.label}: ${destination.path}`).join("\n")}`,
+    userText ? `Latest user message:\n${userText.slice(0, 300)}` : "Latest user message: unavailable",
+    snippets.length > 0 ? `Concierge knowledge snippets:\n${snippets.join("\n\n")}` : "Concierge knowledge snippets: unavailable",
     context.length > 0 ? `Page context:\n${context.join("\n")}` : "Page context: unavailable"
   ].join("\n");
 }
@@ -191,7 +397,7 @@ async function callMiniMax({ modelRef, messages, page }) {
     model: minimaxModelId(modelRef),
     max_tokens: Number.parseInt(process.env.SITE_CHAT_MAX_TOKENS || "500", 10),
     temperature: Number.parseFloat(process.env.SITE_CHAT_TEMPERATURE || "0.2"),
-    system: buildSystemPrompt(page),
+    system: buildSystemPrompt(page, messages),
     messages
   };
 

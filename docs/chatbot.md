@@ -37,6 +37,20 @@ This website uses a floating chatbot widget on every page. The frontend calls lo
 - Chat messages are rendered as text only to reduce XSS risk.
 - Page context sent to backend is metadata-only (URL/title/path).
 
+## Flint role orchestration
+
+- Flint is prompted as Tommy's AI assistant and concierge host.
+- Prompt composition includes:
+  - page metadata (`url`, `title`, `path`)
+  - deterministic destination mapping
+  - concise curated knowledge snippets from:
+    - `/Users/flint/Documents/AI Website/docs/flint-concierge-guide.md`
+- Behavior policy:
+  - reactive-first assistance
+  - soft hotel metaphor usage
+  - real page/project names only (no invented destinations)
+  - owner handoff suggestions only for explicit intent triggers
+
 ## Deployment checks
 
 Run these after each deploy to validate domain routing:
