@@ -2,7 +2,7 @@
 
 ## Overview
 
-This website uses a unified inline terminal chat in the menu bar on every page. The frontend calls local backend routes, and the backend proxies to MiniMax using `MINIMAX_API_KEY` from environment variables.
+This website uses a unified floating terminal-style chat widget in the bottom-right corner on every page. The frontend calls local backend routes, and the backend proxies to MiniMax using `MINIMAX_API_KEY` from environment variables.
 
 ## Routes
 
@@ -27,16 +27,18 @@ This website uses a unified inline terminal chat in the menu bar on every page. 
 - The shared frontend lives in:
   - `/Users/flint/Documents/AI Website/assets/site-assistant/site-assistant.js`
   - `/Users/flint/Documents/AI Website/assets/site-assistant/site-assistant.css`
-- The frontend injects a single inline terminal component into `.site-wordmark` or `.site-nav`.
-- Desktop layout keeps the existing left/right nav labels and centers the terminal between them.
-- Narrow layouts stack the terminal onto a second row instead of opening a floating window.
+- The frontend injects a single fixed assistant widget at the `body` level rather than mounting into `.site-wordmark` or `.site-nav`.
+- The widget is anchored to the bottom-right corner with safe-area-aware offsets.
+- Desktop defaults to the expanded widget; mobile defaults to a minimized launcher bar when no saved preference exists.
+- The minimized state is a compact launcher bar that reopens the full terminal widget.
 - The visible transcript includes typed `user`, `assistant`, and `system` lines.
 - System lines are intentionally terse and cover operational events such as session restore, page changes, request state, gate state, clear history, and errors.
-- The homepage email gate remains in place and hides the terminal until unlock.
+- The homepage email gate remains in the Work section and hides the floating widget until unlock.
 
 ## Client storage
 
 - `site_assistant_session_id_v1` stores the assistant session ID.
+- `site_assistant_widget_minimized_v1` stores the floating widget state (`"1"` minimized, `"0"` expanded).
 - `site_assistant_messages_v1` now stores typed transcript entries:
 
 ```json

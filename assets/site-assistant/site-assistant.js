@@ -6,6 +6,7 @@
     email: "site_assistant_email_v1",
     sessionId: "site_assistant_session_id_v1",
     transcript: "site_assistant_messages_v1",
+    widgetMinimized: "site_assistant_widget_minimized_v1",
     apiBase: "site_assistant_api_base_v1",
     legacyOpen: "site_assistant_open_v1"
   };
@@ -24,6 +25,7 @@
   const MAX_TRANSCRIPT_ENTRIES = 60;
   const MAX_CHAT_HISTORY = 16;
   const gateRequired = Boolean(document.getElementById("workCloud"));
+  const MOBILE_WIDGET_QUERY = "(max-width: 900px)";
   let lastPageKey = "";
 
   const sessionInfo = readOrInitSessionId();
@@ -31,8 +33,7 @@
     unlocked: gateRequired ? readBool(STORAGE.unlocked) : true,
     freshUnlock: false,
     gateState: "locked",
-    minimized: false,
-    homeDocked: false,
+    minimized: readInitialWidgetState(),
     sending: false,
     sessionId: sessionInfo.id,
     sessionIsNew: sessionInfo.isNew,
@@ -49,6 +50,34 @@
       return localStorage.getItem(key) === "1";
     } catch {
       return false;
+    }
+  }
+
+  function readStoredBool(key) {
+    try {
+      const value = localStorage.getItem(key);
+      if (value === "1") return true;
+      if (value === "0") return false;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function defaultWidgetMinimized() {
+    return Boolean(window.matchMedia && window.matchMedia(MOBILE_WIDGET_QUERY).matches);
+  }
+
+  function readInitialWidgetState() {
+    const stored = readStoredBool(STORAGE.widgetMinimized);
+    return stored === null ? defaultWidgetMinimized() : stored;
+  }
+
+  function persistWidgetState() {
+    try {
+      localStorage.setItem(STORAGE.widgetMinimized, state.minimized ? "1" : "0");
+    } catch {
+      // no-op
     }
   }
 
@@ -314,18 +343,45 @@
     els.terminal.setAttribute("aria-busy", nextState === "busy" ? "true" : "false");
   }
 
+  function syncWidgetVisibility() {
+    const locked = !state.unlocked;
+
+    if (els.root) {
+      els.root.hidden = locked;
+      els.root.setAttribute("aria-hidden", String(locked));
+    }
+
+    if (els.terminal) {
+      const terminalHidden = locked || state.minimized;
+      els.terminal.hidden = terminalHidden;
+      els.terminal.setAttribute("aria-hidden", String(terminalHidden));
+    }
+
+    if (els.launcher) {
+      const launcherHidden = locked || !state.minimized;
+      els.launcher.hidden = launcherHidden;
+      els.launcher.setAttribute("aria-hidden", String(launcherHidden));
+    }
+  }
+
   function setTerminalMinimized(minimized, options = {}) {
     const nextMinimized = Boolean(minimized);
     state.minimized = nextMinimized;
 
     if (!els.terminal || !els.transcript || !els.chatToggle) return;
 
+    if (els.root) els.root.classList.toggle("is-minimized", nextMinimized);
     els.terminal.classList.toggle("is-minimized", nextMinimized);
     els.transcript.hidden = nextMinimized;
     if (els.chatClear) els.chatClear.hidden = nextMinimized;
+    if (els.launcherLabel) {
+      els.launcherLabel.textContent = nextMinimized ? "flint ready" : "flint active";
+    }
 
     els.chatToggle.textContent = nextMinimized ? "+" : "-";
     els.chatToggle.setAttribute("aria-label", nextMinimized ? "Expand terminal" : "Minimize terminal");
+    syncWidgetVisibility();
+    if (options.persist !== false) persistWidgetState();
 
     if (!nextMinimized) {
       els.transcript.scrollTop = els.transcript.scrollHeight;
@@ -335,39 +391,9 @@
     }
   }
 
-  function setHomeDocked(docked) {
-    const nextDocked = Boolean(docked);
-    if (state.homeDocked === nextDocked) return;
-
-    state.homeDocked = nextDocked;
-
-    if (els.homeDockSection) {
-      els.homeDockSection.classList.toggle("sa-work-active", nextDocked);
-    }
-
-    if (els.host && els.host.classList.contains("site-wordmark")) {
-      els.host.classList.toggle("sa-home-docked-bottom", nextDocked);
-    }
-    document.body.classList.toggle("sa-work-active", nextDocked);
-    document.body.classList.toggle("sa-home-docked-bottom", nextDocked);
-  }
-
-  function updateHomeDocking() {
-    if (!els.homeDockSection || !els.host || !els.host.classList.contains("site-wordmark")) return;
-
-    const rect = els.homeDockSection.getBoundingClientRect();
-    const entryThreshold = window.innerHeight * 0.34;
-    const workActive = rect.top <= entryThreshold && rect.bottom > 0;
-    setHomeDocked(workActive);
-  }
-
   function collectGatedControls() {
     const explicit = Array.from(document.querySelectorAll("[data-gated-control]"));
     explicit.forEach((el) => trackedControls.add(el));
-  }
-
-  function resolveChatHost() {
-    return document.querySelector(".site-wordmark, .site-nav");
   }
 
   function setControlLocked(el, locked) {
@@ -415,25 +441,8 @@
     if (els.chatSend) els.chatSend.disabled = disabled;
     if (els.chatClear) els.chatClear.disabled = disabled;
     if (els.chatToggle) els.chatToggle.disabled = disabled;
+    if (els.launcher) els.launcher.disabled = disabled;
     if (els.terminal) els.terminal.classList.toggle("is-disabled", !state.unlocked);
-  }
-
-  function bindHomeDocking() {
-    if (!els.homeDockSection || !els.host || !els.host.classList.contains("site-wordmark")) return;
-
-    let frame = null;
-    const requestUpdate = () => {
-      if (frame !== null) return;
-      frame = requestAnimationFrame(() => {
-        frame = null;
-        updateHomeDocking();
-      });
-    };
-
-    requestUpdate();
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", requestUpdate);
-    window.addEventListener("pageshow", requestUpdate);
   }
 
   function maybeEmitPageView() {
@@ -553,7 +562,6 @@
 
     emitGateState("unlocked", { email });
     appendSystemLine("gate unlocked", "ready");
-    setTerminalMinimized(false, { skipFocus: true });
     updateUiForGateState();
     setStatus("ready", "ready");
     els.gateSubmit.disabled = false;
@@ -587,14 +595,8 @@
   function updateUiForGateState() {
     const locked = !state.unlocked;
     applyGateToControls(locked);
-
-    if (els.host) els.host.classList.toggle("sa-terminal-locked", locked);
-    if (els.terminal) {
-      els.terminal.hidden = locked;
-      els.terminal.setAttribute("aria-hidden", String(locked));
-    }
-
     syncTerminalControls();
+    syncWidgetVisibility();
 
     if (locked) {
       if (els.gate) els.gate.hidden = false;
@@ -616,7 +618,11 @@
       playVaultAnimation(() => {
         if (els.gate) els.gate.hidden = true;
         requestAnimationFrame(() => {
-          if (els.chatInput) els.chatInput.focus();
+          if (state.minimized) {
+            if (els.launcher) els.launcher.focus();
+          } else if (els.chatInput) {
+            els.chatInput.focus();
+          }
         });
       });
       revealButtons();
@@ -632,13 +638,15 @@
   function buildUi() {
     const root = document.createElement("div");
     root.id = "siteAssistantRoot";
+    root.className = "site-assistant-root";
     root.setAttribute("data-site-chat-owned", "1");
+    root.hidden = gateRequired && !state.unlocked;
     document.body.appendChild(root);
 
     const terminal = document.createElement("section");
-    terminal.className = "site-assistant-inline";
+    terminal.className = "site-assistant-widget";
     terminal.id = "siteAssistantTerminal";
-    terminal.setAttribute("aria-label", "Flint inline terminal");
+    terminal.setAttribute("aria-label", "Flint floating terminal");
     terminal.hidden = gateRequired && !state.unlocked;
 
     const transcript = document.createElement("ol");
@@ -695,23 +703,31 @@
     terminal.appendChild(transcript);
     terminal.appendChild(composer);
 
-    const chatHost = resolveChatHost();
-    if (chatHost) {
-      chatHost.classList.add("sa-chat-host");
-      if (chatHost.classList.contains("site-wordmark")) {
-        chatHost.classList.add("sa-chat-host-wordmark");
-      } else {
-        chatHost.classList.add("sa-chat-host-nav");
-      }
+    const launcher = document.createElement("button");
+    launcher.type = "button";
+    launcher.className = "site-assistant-launcher";
+    launcher.id = "siteAssistantLauncher";
+    launcher.setAttribute("aria-label", "Open Flint terminal");
+    launcher.hidden = !state.minimized || (gateRequired && !state.unlocked);
 
-      if (chatHost.lastElementChild) {
-        chatHost.insertBefore(terminal, chatHost.lastElementChild);
-      } else {
-        chatHost.appendChild(terminal);
-      }
-    } else {
-      root.appendChild(terminal);
-    }
+    const launcherPrompt = document.createElement("span");
+    launcherPrompt.className = "site-assistant-launcher-prefix";
+    launcherPrompt.textContent = ">";
+
+    const launcherLabel = document.createElement("span");
+    launcherLabel.className = "site-assistant-launcher-label";
+    launcherLabel.textContent = "flint ready";
+
+    const launcherAction = document.createElement("span");
+    launcherAction.className = "site-assistant-launcher-action";
+    launcherAction.textContent = "+";
+
+    launcher.appendChild(launcherPrompt);
+    launcher.appendChild(launcherLabel);
+    launcher.appendChild(launcherAction);
+
+    root.appendChild(terminal);
+    root.appendChild(launcher);
 
     const gate = document.createElement("section");
     gate.className = "site-email-gate";
@@ -781,10 +797,6 @@
     }
 
     els.root = root;
-    els.host = chatHost;
-    els.homeDockSection = chatHost && chatHost.classList.contains("site-wordmark")
-      ? document.getElementById("section-4")
-      : null;
     els.terminal = terminal;
     els.transcript = transcript;
     els.chatForm = composer;
@@ -792,6 +804,8 @@
     els.chatSend = send;
     els.chatClear = clear;
     els.chatToggle = toggle;
+    els.launcher = launcher;
+    els.launcherLabel = launcherLabel;
     els.gate = gate;
     els.gateForm = gateForm;
     els.gateEmail = gateEmail;
@@ -811,6 +825,12 @@
     els.chatToggle.addEventListener("click", () => {
       setTerminalMinimized(!state.minimized, { skipFocus: true });
     });
+
+    if (els.launcher) {
+      els.launcher.addEventListener("click", () => {
+        setTerminalMinimized(false);
+      });
+    }
 
     els.chatForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -856,7 +876,7 @@
     retireLegacyOpenState();
     buildUi();
     renderTranscript();
-    setTerminalMinimized(false, { skipFocus: true });
+    setTerminalMinimized(state.minimized, { skipFocus: true, persist: false });
     bindUi();
     collectGatedControls();
 
@@ -874,7 +894,6 @@
 
     updateUiForGateState();
     bindNavigationObserver();
-    bindHomeDocking();
   }
 
   if (document.readyState === "loading") {
