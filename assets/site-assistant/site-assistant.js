@@ -270,7 +270,10 @@
   function renderMessages() {
     els.messageList.innerHTML = "";
     if (state.messages.length === 0) {
-      addMessage("assistant", "Welcome in. I'm Flint, Tommy's AI assistant and your host. Tell me what you're looking for, and I'll point you to the right stop.", false);
+      const empty = document.createElement("li");
+      empty.className = "site-assistant-empty";
+      empty.textContent = "Type here to start chatting with Flint";
+      els.messageList.appendChild(empty);
       return;
     }
     state.messages.forEach((m) => addMessage(m.role, m.content, false));
@@ -467,7 +470,7 @@
     close.type = "button";
     close.className = "site-assistant-close";
     close.setAttribute("aria-label", "Close assistant chat");
-    close.textContent = "x";
+    close.textContent = "\u00d7";
 
     const clear = document.createElement("button");
     clear.type = "button";
@@ -501,7 +504,7 @@
     input.id = "siteAssistantInput";
     input.className = "site-assistant-input";
     input.type = "text";
-    input.placeholder = "Ask about this page";
+    input.placeholder = "Ask Flint anything\u2026";
     input.maxLength = 4000;
     input.autocomplete = "off";
 

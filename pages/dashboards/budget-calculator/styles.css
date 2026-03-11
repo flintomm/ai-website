@@ -360,7 +360,13 @@ input:focus, select:focus {
 .table-wrap {
   border: 1px solid var(--line); overflow: auto;
   flex: 1; min-height: 0; background: rgba(0,0,0,0.22);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
+.table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+.table-wrap::-webkit-scrollbar-track { background: transparent; }
+.table-wrap::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 2px; }
+.table-wrap::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }
 .table-wrap.compact { max-height: 206px; }
 
 table { width: 100%; border-collapse: collapse; }
@@ -414,7 +420,13 @@ td input { padding: 0.22rem 0.3rem; font-size: 0.6rem; }
   margin-top: 0.28rem; padding-top: 0.28rem;
   display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
   gap: 0.26rem; max-height: 68px; overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
+
+.viz-legend::-webkit-scrollbar { width: 3px; }
+.viz-legend::-webkit-scrollbar-track { background: transparent; }
+.viz-legend::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 2px; }
 
 .legend-item {
   display: flex; align-items: center; gap: 0.38rem;

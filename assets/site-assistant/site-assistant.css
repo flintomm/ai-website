@@ -131,12 +131,15 @@
   border: none;
   background: transparent;
   color: var(--sa-muted);
-  font-size: 1rem;
+  font-size: 1.15rem;
   line-height: 1;
   padding: 0.2rem 0.4rem;
   min-height: 34px;
   min-width: 34px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .site-assistant-close:hover,
@@ -178,6 +181,19 @@
 
 .site-assistant-messages::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.34);
+}
+
+.site-assistant-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 120px;
+  font: 400 0.82rem/1.5 "Ubuntu", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: rgba(255, 255, 255, 0.22);
+  letter-spacing: 0.02em;
+  padding: 1.5rem 1rem;
+  user-select: none;
 }
 
 .site-assistant-bubble {
@@ -244,7 +260,7 @@
 }
 
 .site-assistant-input::placeholder {
-  color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.3);
 }
 
 .site-assistant-input:focus-visible {
