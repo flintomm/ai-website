@@ -31,6 +31,8 @@
     unlocked: gateRequired ? readBool(STORAGE.unlocked) : true,
     freshUnlock: false,
     gateState: "locked",
+    minimized: false,
+    homeDocked: false,
     sending: false,
     sessionId: sessionInfo.id,
     sessionIsNew: sessionInfo.isNew,
@@ -306,9 +308,52 @@
   }
 
   function setStatus(text, stateValue) {
-    if (!els.status) return;
-    els.status.textContent = String(text || "");
-    els.status.dataset.state = stateValue || "info";
+    if (!els.terminal) return;
+    const nextState = stateValue || "info";
+    els.terminal.dataset.state = nextState;
+    els.terminal.setAttribute("aria-busy", nextState === "busy" ? "true" : "false");
+  }
+
+  function setTerminalMinimized(minimized, options = {}) {
+    const nextMinimized = Boolean(minimized);
+    state.minimized = nextMinimized;
+
+    if (!els.terminal || !els.transcript || !els.chatToggle) return;
+
+    els.terminal.classList.toggle("is-minimized", nextMinimized);
+    els.transcript.hidden = nextMinimized;
+    if (els.chatClear) els.chatClear.hidden = nextMinimized;
+
+    els.chatToggle.textContent = nextMinimized ? "+" : "-";
+    els.chatToggle.setAttribute("aria-label", nextMinimized ? "Expand terminal" : "Minimize terminal");
+
+    if (!nextMinimized) {
+      els.transcript.scrollTop = els.transcript.scrollHeight;
+      if (!options.skipFocus && state.unlocked && !state.sending && els.chatInput) {
+        requestAnimationFrame(() => els.chatInput.focus());
+      }
+    }
+  }
+
+  function setHomeDocked(docked) {
+    const nextDocked = Boolean(docked);
+    if (state.homeDocked === nextDocked) return;
+
+    state.homeDocked = nextDocked;
+
+    if (els.host && els.host.classList.contains("site-wordmark")) {
+      els.host.classList.toggle("sa-home-docked-bottom", nextDocked);
+    }
+    document.body.classList.toggle("sa-home-docked-bottom", nextDocked);
+  }
+
+  function updateHomeDocking() {
+    if (!els.homeDockSection || !els.host || !els.host.classList.contains("site-wordmark")) return;
+
+    const rect = els.homeDockSection.getBoundingClientRect();
+    const viewportFocus = window.innerHeight * 0.5;
+    const workActive = rect.top <= viewportFocus && rect.bottom >= viewportFocus;
+    setHomeDocked(workActive);
   }
 
   function collectGatedControls() {
@@ -363,8 +408,27 @@
     const disabled = !state.unlocked || state.sending;
     if (els.chatInput) els.chatInput.disabled = disabled;
     if (els.chatSend) els.chatSend.disabled = disabled;
-    if (els.chatClear) els.chatClear.disabled = !state.unlocked;
+    if (els.chatClear) els.chatClear.disabled = disabled;
+    if (els.chatToggle) els.chatToggle.disabled = disabled;
     if (els.terminal) els.terminal.classList.toggle("is-disabled", !state.unlocked);
+  }
+
+  function bindHomeDocking() {
+    if (!els.homeDockSection || !els.host || !els.host.classList.contains("site-wordmark")) return;
+
+    let frame = null;
+    const requestUpdate = () => {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        updateHomeDocking();
+      });
+    };
+
+    requestUpdate();
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+    window.addEventListener("resize", requestUpdate);
+    window.addEventListener("pageshow", requestUpdate);
   }
 
   function maybeEmitPageView() {
@@ -419,6 +483,10 @@
   async function sendChatMessage(question) {
     const trimmed = String(question || "").trim().slice(0, 4000);
     if (!trimmed || state.sending || !state.unlocked) return;
+
+    if (state.minimized) {
+      setTerminalMinimized(false, { skipFocus: true });
+    }
 
     state.sending = true;
     syncTerminalControls();
@@ -480,6 +548,7 @@
 
     emitGateState("unlocked", { email });
     appendSystemLine("gate unlocked", "ready");
+    setTerminalMinimized(false, { skipFocus: true });
     updateUiForGateState();
     setStatus("ready", "ready");
     els.gateSubmit.disabled = false;
@@ -567,32 +636,6 @@
     terminal.setAttribute("aria-label", "Flint inline terminal");
     terminal.hidden = gateRequired && !state.unlocked;
 
-    const chrome = document.createElement("div");
-    chrome.className = "site-assistant-chrome";
-
-    const lights = document.createElement("div");
-    lights.className = "site-assistant-lights";
-    for (let index = 0; index < 3; index += 1) {
-      const light = document.createElement("span");
-      light.className = "site-assistant-light";
-      lights.appendChild(light);
-    }
-
-    const status = document.createElement("p");
-    status.className = "site-assistant-status";
-    status.id = "siteAssistantStatus";
-    status.textContent = "booting";
-
-    const clear = document.createElement("button");
-    clear.type = "button";
-    clear.className = "site-assistant-clear";
-    clear.setAttribute("aria-label", "Clear terminal history");
-    clear.textContent = "clear";
-
-    chrome.appendChild(lights);
-    chrome.appendChild(status);
-    chrome.appendChild(clear);
-
     const transcript = document.createElement("ol");
     transcript.className = "site-assistant-transcript";
     transcript.id = "siteAssistantTranscript";
@@ -625,12 +668,25 @@
     send.className = "site-assistant-send";
     send.textContent = "run";
 
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "site-assistant-clear";
+    clear.setAttribute("aria-label", "Clear terminal history");
+    clear.textContent = "clear";
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "site-assistant-toggle";
+    toggle.setAttribute("aria-label", "Minimize terminal");
+    toggle.textContent = "-";
+
     composer.appendChild(label);
     composer.appendChild(prompt);
     composer.appendChild(input);
     composer.appendChild(send);
+    composer.appendChild(clear);
+    composer.appendChild(toggle);
 
-    terminal.appendChild(chrome);
     terminal.appendChild(transcript);
     terminal.appendChild(composer);
 
@@ -721,13 +777,16 @@
 
     els.root = root;
     els.host = chatHost;
+    els.homeDockSection = chatHost && chatHost.classList.contains("site-wordmark")
+      ? document.getElementById("section-4")
+      : null;
     els.terminal = terminal;
     els.transcript = transcript;
     els.chatForm = composer;
     els.chatInput = input;
     els.chatSend = send;
     els.chatClear = clear;
-    els.status = status;
+    els.chatToggle = toggle;
     els.gate = gate;
     els.gateForm = gateForm;
     els.gateEmail = gateEmail;
@@ -742,6 +801,10 @@
       clearTranscript();
       setStatus("ready", "ready");
       if (state.unlocked) requestAnimationFrame(() => els.chatInput.focus());
+    });
+
+    els.chatToggle.addEventListener("click", () => {
+      setTerminalMinimized(!state.minimized, { skipFocus: true });
     });
 
     els.chatForm.addEventListener("submit", (event) => {
@@ -788,6 +851,7 @@
     retireLegacyOpenState();
     buildUi();
     renderTranscript();
+    setTerminalMinimized(false, { skipFocus: true });
     bindUi();
     collectGatedControls();
 
@@ -805,6 +869,7 @@
 
     updateUiForGateState();
     bindNavigationObserver();
+    bindHomeDocking();
   }
 
   if (document.readyState === "loading") {
