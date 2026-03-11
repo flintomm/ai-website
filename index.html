@@ -1056,14 +1056,19 @@
         if (event.ctrlKey) return;
         event.preventDefault();
         const scrollLimit = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
-        const dpr = Math.max(window.devicePixelRatio || 1, 1);
-        const multiplier = event.deltaMode === 1 ? 28 : 0.42 * Math.sqrt(dpr);
+        const viewportScale = Math.min(Math.max(window.innerHeight / 960, 1), 2.5);
+        const multiplier = event.deltaMode === 1
+          ? 34 * viewportScale
+          : event.deltaMode === 2
+            ? window.innerHeight * 0.88
+            : 0.92 * viewportScale;
+        const easing = Math.min(0.22, 0.14 + ((viewportScale - 1) * 0.06));
         targetScrollY = Math.min(Math.max(targetScrollY + event.deltaY * multiplier, 0), scrollLimit);
 
         if (dampenFrame) return;
         const animate = () => {
           const current = window.scrollY;
-          const next    = current + (targetScrollY - current) * 0.12;
+          const next    = current + (targetScrollY - current) * easing;
           if (Math.abs(targetScrollY - current) < 0.4) {
             window.scrollTo(0, targetScrollY);
             dampenFrame = null;
