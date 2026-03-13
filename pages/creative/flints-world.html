@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flints World | Flint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #071018;
+        --bg-hi: #102335;
+        --surface: rgba(13, 24, 36, 0.88);
+        --surface-strong: rgba(12, 19, 29, 0.98);
+        --border: rgba(167, 199, 255, 0.16);
+        --border-hi: rgba(167, 199, 255, 0.32);
+        --text: #eef7ff;
+        --muted: rgba(238, 247, 255, 0.7);
+        --accent: #74f0c4;
+        --accent-2: #ff9c54;
+        --accent-3: #83b5ff;
+        --shadow: rgba(3, 7, 12, 0.55);
+        --font-display: "Press Start 2P", monospace;
+        --font-body: "Space Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        --touch-target: 44px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        font-family: var(--font-body);
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(116, 240, 196, 0.16), transparent 32%),
+          radial-gradient(circle at top right, rgba(131, 181, 255, 0.16), transparent 28%),
+          linear-gradient(180deg, var(--bg-hi), var(--bg));
+        padding-bottom: 7rem;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .site-nav {
+        padding: 1rem clamp(1rem, 3vw, 2rem);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: rgba(5, 10, 15, 0.65);
+        backdrop-filter: blur(14px);
+      }
+
+      .back-link,
+      .hero-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--touch-target);
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-size: 0.72rem;
+        color: var(--muted);
+        transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+      }
+
+      .back-link:hover,
+      .hero-link:hover {
+        color: var(--text);
+      }
+
+      .site-tag {
+        font-size: 0.66rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .hero {
+        padding: clamp(1.4rem, 4vw, 2.8rem) clamp(1rem, 3vw, 2.2rem) 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .hero-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        gap: 1.1rem;
+      }
+
+      .hero-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        width: fit-content;
+        padding: 0.45rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--accent);
+        background: rgba(116, 240, 196, 0.08);
+      }
+
+      .hero h1 {
+        font-family: var(--font-display);
+        font-size: clamp(1.3rem, 3vw, 2.6rem);
+        line-height: 1.35;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .hero-copy {
+        max-width: 760px;
+        font-size: clamp(0.95rem, 1.3vw, 1.08rem);
+        line-height: 1.7;
+        color: var(--muted);
+      }
+
+      .hero-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .hero-link {
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(9, 16, 25, 0.56);
+      }
+
+      .hero-link.primary {
+        color: #051016;
+        background: linear-gradient(135deg, var(--accent), #8af7d2);
+        border-color: transparent;
+      }
+
+      .hero-link.primary:hover {
+        color: #051016;
+        filter: brightness(1.03);
+      }
+
+      .hero-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+
+      .hero-chip {
+        padding: 0.45rem 0.65rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-size: 0.74rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: rgba(7, 13, 21, 0.55);
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.4rem clamp(1rem, 3vw, 2.2rem) 3rem;
+      }
+
+      .world-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(280px, 390px);
+        gap: clamp(1rem, 2.6vw, 1.9rem);
+        align-items: start;
+      }
+
+      .scene-card,
+      .info-card {
+        background: linear-gradient(180deg, rgba(14, 24, 37, 0.96), rgba(8, 14, 24, 0.98));
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        box-shadow: 0 28px 80px var(--shadow);
+      }
+
+      .scene-card {
+        overflow: hidden;
+      }
+
+      .scene-card-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        padding: 1rem 1.15rem 0;
+      }
+
+      .scene-card-title {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      .scene-label,
+      .panel-label {
+        font-size: 0.72rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .scene-heading {
+        font-family: var(--font-display);
+        font-size: clamp(0.9rem, 1.5vw, 1.15rem);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .scene-badge {
+        padding: 0.45rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid rgba(116, 240, 196, 0.24);
+        color: var(--accent);
+        background: rgba(116, 240, 196, 0.09);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .world-frame {
+        padding: clamp(0.95rem, 2vw, 1.2rem);
+      }
+
+      .world-stage-wrap {
+        padding: clamp(0.8rem, 2vw, 1rem);
+        border-radius: 22px;
+        background:
+          radial-gradient(circle at 50% 12%, rgba(131, 181, 255, 0.14), transparent 36%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
+        border: 1px solid rgba(255, 255, 255, 0.04);
+      }
+
+      #miniverse-container {
+        border-radius: 22px;
+        overflow: hidden;
+        background: #0c1725;
+        line-height: 0;
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+          inset 0 -22px 38px rgba(0, 0, 0, 0.32),
+          0 16px 40px rgba(0, 0, 0, 0.36);
+      }
+
+      #miniverse-container canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+        image-rendering: pixelated;
+      }
+
+      .scene-caption {
+        margin-top: 0.5rem;
+        color: var(--muted);
+        font-size: 0.82rem;
+        letter-spacing: 0.04em;
+        text-align: center;
+      }
+
+      .world-note-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.65rem;
+        padding: 0 1.1rem 1.1rem;
+      }
+
+      .note-chip {
+        padding: 0.85rem 0.9rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(6, 13, 20, 0.66);
+      }
+
+      .note-chip strong {
+        display: block;
+        margin-bottom: 0.4rem;
+        font-size: 0.82rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .note-chip span {
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.55;
+      }
+
+      .info-card {
+        padding: 1rem;
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .info-block {
+        padding: 1rem;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(6, 13, 20, 0.66);
+      }
+
+      .info-block h2,
+      .info-block h3 {
+        font-size: 1.08rem;
+        line-height: 1.35;
+      }
+
+      .info-copy {
+        margin-top: 0.55rem;
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 0.96rem;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem;
+      }
+
+      .metric {
+        padding: 0.85rem 0.9rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(10, 16, 24, 0.84);
+      }
+
+      .metric span {
+        display: block;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 0.45rem;
+        font-size: 1rem;
+        line-height: 1.35;
+      }
+
+      .info-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--touch-target);
+        margin-top: 0.8rem;
+        padding: 0.7rem 1rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.74rem;
+        color: var(--accent);
+      }
+
+      .agent-list {
+        list-style: none;
+        display: grid;
+        gap: 0.5rem;
+        margin-top: 0.6rem;
+      }
+
+      .agent-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 0.65rem;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        background: rgba(10, 16, 24, 0.7);
+        font-size: 0.88rem;
+      }
+
+      .agent-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: #555;
+      }
+
+      .agent-dot.working { background: #4ade80; }
+      .agent-dot.idle { background: #fbbf24; }
+      .agent-dot.thinking { background: #f472b6; }
+      .agent-dot.sleeping { background: #818cf8; }
+      .agent-dot.speaking { background: #22d3ee; }
+      .agent-dot.error { background: #ef4444; }
+      .agent-dot.offline { background: #555; }
+
+      .agent-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .agent-state {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        flex-shrink: 0;
+      }
+
+      .agent-task {
+        display: block;
+        font-size: 0.76rem;
+        color: var(--accent-3);
+        margin-top: 0.15rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      #tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.85);
+        border: 1px solid var(--accent-2);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 11px;
+        pointer-events: none;
+        display: none;
+        z-index: 100;
+        max-width: 200px;
+      }
+
+      #tooltip .name { color: var(--accent-2); font-weight: bold; }
+      #tooltip .state { color: #aaa; }
+      #tooltip .task { color: var(--accent-3); }
+
+      @media (max-width: 1040px) {
+        .world-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .info-card {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .info-block:last-child {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .site-nav {
+          padding: 0.85rem 1rem;
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .hero {
+          padding: 1.2rem 1rem 1rem;
+        }
+
+        main {
+          padding: 1rem 1rem 2.4rem;
+        }
+
+        .world-frame {
+          padding: 0.85rem;
+        }
+
+        .world-note-row,
+        .info-card,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .scene-card-header {
+          padding: 0.95rem 0.95rem 0;
+        }
+
+        .hero h1 {
+          font-size: clamp(1.05rem, 6vw, 1.45rem);
+        }
+
+        .scene-heading {
+          font-size: 0.82rem;
+          line-height: 1.5;
+        }
+
+        .scene-badge,
+        .hero-link,
+        .hero-kicker,
+        .hero-chip,
+        .site-tag {
+          font-size: 0.62rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html:focus-within {
+          scroll-behavior: auto;
+        }
+
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="../../assets/site-assistant/site-assistant.css" />
+  </head>
+  <body>
+    <nav class="site-nav">
+      <a class="back-link" href="../../index.html#section-4">< Flint</a>
+      <span class="site-tag">Creative Corner / Flints World</span>
+    </nav>
+
+    <header class="hero">
+      <div class="hero-inner">
+        <span class="hero-kicker">Miniverse Canvas Room</span>
+        <h1>Flints World</h1>
+        <p class="hero-copy">
+          A tiny pixel world where Flint and visiting AI agents hang out between builds. Powered by Miniverse with
+          real-time WebSocket updates and sprite-sheet animations.
+        </p>
+        <div class="hero-links">
+          <a class="hero-link primary" href="./creative-work.html">Open Creative Corner</a>
+          <a class="hero-link" href="../../index.html#section-4">Back to Work</a>
+        </div>
+        <div class="hero-chips">
+          <span class="hero-chip">Canvas renderer</span>
+          <span class="hero-chip">WebSocket sync</span>
+          <span class="hero-chip">Claude Code hooks</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="world-layout">
+        <article class="scene-card" id="sceneCard">
+          <div class="scene-card-header">
+            <div class="scene-card-title">
+              <span class="scene-label">Scene Live</span>
+              <h2 class="scene-heading">Cozy startup office with exposed brick, desks, and a lounge corner.</h2>
+            </div>
+            <span class="scene-badge" id="connectionBadge">connecting</span>
+          </div>
+
+          <div class="world-frame">
+            <div class="world-stage-wrap">
+              <div
+                id="miniverse-container"
+                role="img"
+                aria-label="A top-down pixel-art office rendered on canvas with animated AI agent citizens."
+              >
+                <p class="visually-hidden">
+                  Miniverse canvas world showing Flint and visiting AI agents in a cozy startup office.
+                </p>
+              </div>
+              <p class="scene-caption">Canvas-rendered Miniverse world. Agents appear live via WebSocket heartbeats.</p>
+            </div>
+          </div>
+
+          <div class="world-note-row">
+            <div class="note-chip">
+              <strong>Miniverse</strong>
+              <span>Real sprite-sheet animations on a canvas renderer with prop layering and walkable grids.</span>
+            </div>
+            <div class="note-chip">
+              <strong>Live Agents</strong>
+              <span>Claude Code sessions show up as citizens via hooks integration posting to the Miniverse server.</span>
+            </div>
+            <div class="note-chip">
+              <strong>Same AI</strong>
+              <span>The shared Flint assistant in the bottom-right uses the same backend and page-aware context as the rest of the site.</span>
+            </div>
+          </div>
+        </article>
+
+        <aside class="info-card">
+          <section class="info-block">
+            <p class="panel-label">Flint Right Now</p>
+            <h2 id="flintHeadline">Flint is setting up the world canvas.</h2>
+            <p class="info-copy" id="flintDetail">Miniverse is loading the cozy startup office and connecting to the signal server.</p>
+          </section>
+
+          <section class="info-block">
+            <p class="panel-label">Live Agents</p>
+            <h3 id="agentHeadline">Checking for agents...</h3>
+            <ul class="agent-list" id="agentList"></ul>
+          </section>
+
+          <section class="info-block">
+            <p class="panel-label">Room Telemetry</p>
+            <div class="metrics">
+              <div class="metric">
+                <span>Flint state</span>
+                <strong id="flintMode">idle</strong>
+              </div>
+              <div class="metric">
+                <span>Agents online</span>
+                <strong id="agentCount">0</strong>
+              </div>
+              <div class="metric">
+                <span>Signal</span>
+                <strong id="signalMode">websocket</strong>
+              </div>
+              <div class="metric">
+                <span>World</span>
+                <strong id="worldMode">cozy-startup</strong>
+              </div>
+            </div>
+            <a class="info-link" href="./creative-work.html">Creative Corner</a>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <div id="tooltip">
+      <div class="name"></div>
+      <div class="state"></div>
+      <div class="task"></div>
+    </div>
+
+    <script type="module">
+      import { Miniverse, PropSystem, createStandardSpriteConfig } from '../../assets/miniverse/core.js';
+
+      const WORLD_ID = 'cozy-startup';
+      const basePath = `/worlds/${WORLD_ID}`;
+      const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${location.host}/ws`;
+
+      function charSprites(name) {
+        return {
+          sheets: {
+            walk: `/universal_assets/citizens/${name}_walk.png`,
+            actions: `/universal_assets/citizens/${name}_actions.png`,
+          },
+          animations: {
+            idle_down: { sheet: 'actions', row: 3, frames: 4, speed: 0.5 },
+            idle_up: { sheet: 'actions', row: 3, frames: 4, speed: 0.5 },
+            walk_down: { sheet: 'walk', row: 0, frames: 4, speed: 0.15 },
+            walk_up: { sheet: 'walk', row: 1, frames: 4, speed: 0.15 },
+            walk_left: { sheet: 'walk', row: 2, frames: 4, speed: 0.15 },
+            walk_right: { sheet: 'walk', row: 3, frames: 4, speed: 0.15 },
+            working: { sheet: 'actions', row: 0, frames: 4, speed: 0.3 },
+            sleeping: { sheet: 'actions', row: 1, frames: 2, speed: 0.8 },
+            talking: { sheet: 'actions', row: 2, frames: 4, speed: 0.15 },
+          },
+          frameWidth: 64,
+          frameHeight: 64,
+        };
+      }
+
+      function buildSceneConfig(cols, rows, floor, tiles) {
+        const safeFloor = floor ?? Array.from({ length: rows }, () => Array(cols).fill(''));
+        const walkable = [];
+        for (let r = 0; r < rows; r++) {
+          walkable[r] = [];
+          for (let c = 0; c < cols; c++) {
+            walkable[r][c] = (safeFloor[r]?.[c] ?? '') !== '';
+          }
+        }
+
+        const resolvedTiles = { ...(tiles ?? {}) };
+        for (const [key, src] of Object.entries(resolvedTiles)) {
+          if (/^(blob:|data:|https?:\/\/)/.test(src)) continue;
+          const clean = src.startsWith('/') ? src.slice(1) : src;
+          resolvedTiles[key] = `${basePath}/${clean}`;
+        }
+
+        return {
+          name: 'main',
+          tileWidth: 32,
+          tileHeight: 32,
+          layers: [safeFloor],
+          walkable,
+          locations: {},
+          tiles: resolvedTiles,
+        };
+      }
+
+      // --- UI refs ---
+      const container = document.getElementById('miniverse-container');
+      const tooltip = document.getElementById('tooltip');
+      const connectionBadge = document.getElementById('connectionBadge');
+      const flintHeadline = document.getElementById('flintHeadline');
+      const flintDetail = document.getElementById('flintDetail');
+      const flintModeEl = document.getElementById('flintMode');
+      const agentHeadline = document.getElementById('agentHeadline');
+      const agentList = document.getElementById('agentList');
+      const agentCountEl = document.getElementById('agentCount');
+
+      async function main() {
+        // Fetch world data
+        const sceneData = await fetch(`${basePath}/world.json`).then(r => r.json()).catch(() => null);
+        if (!sceneData) {
+          flintHeadline.textContent = 'World data failed to load.';
+          flintDetail.textContent = 'Check that the server is running and world assets are in place.';
+          return;
+        }
+
+        const gridCols = sceneData.gridCols ?? 16;
+        const gridRows = sceneData.gridRows ?? 12;
+        const tileSize = 32;
+        const sceneConfig = buildSceneConfig(gridCols, gridRows, sceneData.floor, sceneData.tiles);
+
+        // Collect work anchor names for citizen placement
+        const workAnchors = (sceneData.props ?? [])
+          .flatMap(f => (f.anchors ?? []).filter(a => a.type === 'work').map(a => a.name));
+
+        // Flint is always present with morty sprite
+        const spriteSheets = {
+          flint: charSprites('morty'),
+        };
+
+        const citizens = [
+          {
+            agentId: 'flint',
+            name: 'Flint',
+            sprite: 'flint',
+            position: workAnchors[0] ?? sceneData.wanderPoints?.[0]?.name ?? 'wander_0',
+          },
+        ];
+
+        const mv = new Miniverse({
+          container,
+          world: WORLD_ID,
+          scene: 'main',
+          signal: {
+            type: 'websocket',
+            url: wsUrl,
+          },
+          citizens,
+          scale: 2,
+          width: gridCols * tileSize,
+          height: gridRows * tileSize,
+          sceneConfig,
+          spriteSheets,
+          objects: [],
+        });
+
+        // --- Props system ---
+        const props = new PropSystem(tileSize, 2);
+
+        const rawSpriteMap = sceneData.propImages ?? {};
+        await Promise.all(
+          Object.entries(rawSpriteMap).map(([id, src]) => {
+            const clean = src.startsWith('/') ? src : '/' + src;
+            return props.loadSprite(id, `${basePath}${clean}`);
+          }),
+        );
+
+        props.setLayout(sceneData.props ?? []);
+        if (sceneData.wanderPoints) {
+          props.setWanderPoints(sceneData.wanderPoints);
+        }
+
+        props.setDeadspaceCheck((col, row) => {
+          const floor = mv.getFloorLayer();
+          return floor?.[row]?.[col] === '';
+        });
+
+        const syncProps = () => {
+          mv.setTypedLocations(props.getLocations());
+          mv.updateWalkability(props.getBlockedTiles());
+        };
+        syncProps();
+        props.onSave(syncProps);
+
+        await mv.start();
+
+        mv.addLayer({ order: 5, render: (ctx) => props.renderBelow(ctx) });
+        mv.addLayer({ order: 15, render: (ctx) => props.renderAbove(ctx) });
+
+        // --- Tooltip ---
+        mv.on('citizen:click', (data) => {
+          tooltip.style.display = 'block';
+          tooltip.querySelector('.name').textContent = data.name;
+          tooltip.querySelector('.state').textContent = `State: ${data.state}`;
+          tooltip.querySelector('.task').textContent = data.task ? `Task: ${data.task}` : 'No active task';
+          setTimeout(() => { tooltip.style.display = 'none'; }, 3000);
+        });
+
+        container.addEventListener('mousemove', (e) => {
+          tooltip.style.left = e.clientX + 12 + 'px';
+          tooltip.style.top = e.clientY + 12 + 'px';
+        });
+
+        // --- Connection status ---
+        connectionBadge.textContent = 'live';
+        connectionBadge.style.borderColor = 'rgba(116, 240, 196, 0.24)';
+        flintHeadline.textContent = 'Flint is in the cozy startup office.';
+        flintDetail.textContent = 'Canvas is running. Agents appear live when Claude Code sessions connect via hooks.';
+
+        // --- Agent polling ---
+        const AVAILABLE_SPRITES = ['morty', 'dexter', 'nova', 'rio'];
+        let knownAgentSprites = {};
+        let spriteIndex = 1; // 0 is morty (flint)
+
+        async function pollAgents() {
+          try {
+            const res = await fetch(`/api/agents`);
+            const data = await res.json();
+            const agents = data.agents ?? [];
+            const online = agents.filter(a => a.state !== 'offline');
+
+            agentCountEl.textContent = String(online.length);
+
+            if (online.length === 0) {
+              agentHeadline.textContent = 'No agents online.';
+              agentList.innerHTML = '';
+            } else {
+              agentHeadline.textContent = `${online.length} agent${online.length === 1 ? '' : 's'} online`;
+
+              agentList.innerHTML = online.map(a => {
+                // Assign sprite to new agents dynamically
+                if (!knownAgentSprites[a.agent] && a.agent !== 'flint') {
+                  const spriteName = AVAILABLE_SPRITES[spriteIndex % AVAILABLE_SPRITES.length];
+                  knownAgentSprites[a.agent] = spriteName;
+                  spriteIndex++;
+
+                  // Register sprite + citizen in miniverse
+                  mv.addSpriteSheet(a.agent, charSprites(spriteName));
+                  const pos = workAnchors[Object.keys(knownAgentSprites).length] ??
+                    sceneData.wanderPoints?.[Object.keys(knownAgentSprites).length]?.name ?? 'wander_0';
+                  mv.addCitizen({ agentId: a.agent, name: a.name ?? a.agent, sprite: a.agent, position: pos });
+                }
+
+                const stateClass = a.state || 'offline';
+                const task = a.task ? `<span class="agent-task">${escapeHtml(a.task)}</span>` : '';
+                return `<li class="agent-row">
+                  <span class="agent-dot ${stateClass}"></span>
+                  <span class="agent-name">${escapeHtml(a.name ?? a.agent)}${task}</span>
+                  <span class="agent-state">${escapeHtml(a.state ?? 'unknown')}</span>
+                </li>`;
+              }).join('');
+            }
+
+            // Update Flint state from first matching agent
+            const flintAgent = agents.find(a => a.agent === 'flint');
+            if (flintAgent) {
+              flintModeEl.textContent = flintAgent.state ?? 'idle';
+            }
+          } catch {
+            // Server not reachable — that's ok
+          }
+        }
+
+        pollAgents();
+        setInterval(pollAgents, 3000);
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      main().catch(err => {
+        console.error('Miniverse init failed:', err);
+        const h = document.getElementById('flintHeadline');
+        if (h) h.textContent = 'Miniverse failed to initialize.';
+      });
+    </script>
+    <script defer src="../../assets/site-assistant/site-assistant.js"></script>
+  </body>
+</html>

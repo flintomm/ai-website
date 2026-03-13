@@ -7,6 +7,7 @@ The assistant should reference real project labels and paths only.
 Primary paths:
 - Home (Lobby): `/`
 - Creative Corner: `/pages/creative/creative-work.html`
+- Flints World: `/pages/creative/flints-world.html`
 - Roster Architect: `/pages/dashboards/roster-architect/roster-architect.html`
 - Budget Calculator: `/pages/dashboards/budget-calculator/budget-calculator.html`
 - Tower Defense: `/pages/games/tower-defense.html`
@@ -21,17 +22,33 @@ Homepage experience highlights:
   - Creative Corner
   - Data Dashboards
   - Digital Games
-- Creative link in Work section points to external project `https://www.tymmop.com` via "between the spaces".
-- Footer includes a Flint email mailto and a LinkedIn link.
+- Creative dropdown currently links to:
+  - Flints World
+  - between the spaces
+- Footer includes a Flint email mailto to `flint@tphch.com` and a LinkedIn link.
 
 ### creative_corner
 Creative Corner page path: `/pages/creative/creative-work.html`.
 Main intent: showcase creative projects and active/in-progress concepts.
 Current cards:
+- Flints World (Live) with internal link to `/pages/creative/flints-world.html`
 - between the spaces (Live) with external link to `https://www.tymmop.com`
 - Movie Trailers (In Progress)
 - Comics (In Progress)
 Tone of this page is artistic and storytelling-focused.
+
+### flints_world
+Flints World page path: `/pages/creative/flints-world.html`.
+Purpose: a top-down ambient pixel room centered on Flint.
+Scene behavior:
+- Flint cycles through `working`, `look`, `idle`, and `wave` states.
+- One cameo friend appears at a time and leaves after a short room event.
+- Tiny status bubbles such as notes, thoughts, and `zzz` may appear above characters.
+Page structure:
+- Shared site nav and Flint branding
+- Main pixel-room stage with code-built props and characters
+- Status/info panel describing Flint's current state and guest activity
+- Shared floating Flint assistant in the bottom-right corner
 
 ### roster_architect
 Roster Architect path: `/pages/dashboards/roster-architect/roster-architect.html`.
@@ -95,6 +112,7 @@ Tech strip references Rules Engine, Move Validation, Canvas UI, and Vanilla JS.
 If user asks where to start:
 - New visitor overview: Home (`/`)
 - Creative/media interest: Creative Corner (`/pages/creative/creative-work.html`)
+- Pixel room or ambient world interest: Flints World (`/pages/creative/flints-world.html`)
 - Sports simulation interest: Roster Architect (`/pages/dashboards/roster-architect/roster-architect.html`)
 - Personal finance planning interest: Budget Calculator (`/pages/dashboards/budget-calculator/budget-calculator.html`)
 - Action game interest: Tower Defense (`/pages/games/tower-defense.html`)

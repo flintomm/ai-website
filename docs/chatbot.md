@@ -9,7 +9,9 @@ This website uses a unified floating terminal-style chat widget in the bottom-ri
 - `GET /api/chat/health`
 - `GET /api/chat/models`
 - `POST /api/chat/message`
+- `POST /api/chat/unlock`
 - `POST /api/site-chat/chat` (legacy alias for landing assistant compatibility)
+- `POST /api/site-chat/unlock` (logs homepage unlock emails server-side)
 - `POST /api/site-chat/events` (accepts telemetry events, returns `{ ok: true }`)
 
 ## Request payload (`POST /api/chat/message`)
@@ -34,6 +36,7 @@ This website uses a unified floating terminal-style chat widget in the bottom-ri
 - The visible transcript includes typed `user`, `assistant`, and `system` lines.
 - System lines are intentionally terse and cover operational events such as session restore, page changes, request state, gate state, clear history, and errors.
 - The homepage email gate remains in the Work section and hides the floating widget until unlock.
+- Unlock submissions are posted to the backend before the gate opens so contacts are persisted server-side.
 
 ## Client storage
 
@@ -64,6 +67,8 @@ This website uses a unified floating terminal-style chat widget in the bottom-ri
 - `SITE_CHAT_RATE_LIMIT_MAX` (optional, default `30` requests/minute per IP)
 - `SITE_CHAT_DEFAULT_MODEL` (optional, default `minimax/MiniMax-M2.1`)
 - `SITE_CHAT_MAX_TOKENS` (optional, default `220`)
+- `SITE_CONTACT_EMAIL` (optional, defaults to `flint@tphch.com`)
+- `SITE_UNLOCK_LOG_PATH` (optional, defaults to `.data/site-assistant/unlock-log.ndjson`)
 
 ## Security notes
 
@@ -71,6 +76,7 @@ This website uses a unified floating terminal-style chat widget in the bottom-ri
 - Frontend never receives provider credentials.
 - Chat messages are rendered as text only to reduce XSS risk.
 - Page context sent to backend is metadata-only (URL/title/path).
+- Unlock email submissions are appended to a local NDJSON log with timestamp, email, IP, session ID, page context, and request metadata.
 
 ## Flint role orchestration
 
@@ -89,6 +95,7 @@ This website uses a unified floating terminal-style chat widget in the bottom-ri
   - no unsolicited follow-up suggestions (unless visitor explicitly asks)
   - real page/project names only (no invented destinations)
   - owner handoff suggestions only for explicit intent triggers
+  - owner contact requests should route to `flint@tphch.com`
 
 ## Deployment checks
 
@@ -96,6 +103,7 @@ Run these after each deploy to validate domain routing:
 
 - `GET /api/chat/health` should return `200`.
 - `POST /api/chat/message` should return `200` with an `assistant` object.
+- `POST /api/chat/unlock` should return `201` and append a contact log entry.
 - `POST /api/site-chat/chat` should return `200` with an `assistantMessage` object.
 
 ## Recommended production routing (Cloudflare Pages + Railway API)
