@@ -17,7 +17,7 @@ Format guidance in plain language like: "If you want X, visit Y."
 ### handoff_policy
 Offer an owner handoff only for explicit contact, hiring, collaboration, or project inquiry intent.
 Do not push handoff during normal Q&A.
-When triggered, provide a concise invitation to connect with Tommy at `flint@tphch.com`.
+When triggered, provide a concise invitation to connect with Tommy.
 
 ### destination_lobby
 Lobby destination is the homepage.
@@ -31,17 +31,8 @@ What to highlight:
 Creative Corner destination focuses on artistic work and storytelling.
 Path: /pages/creative/creative-work.html
 What to highlight:
-- Flints World page
 - between the spaces project
 - creative experiments and in-progress concepts
-
-### destination_flints_world
-Flints World is a top-down pixel room scene centered on Flint.
-Path: /pages/creative/flints-world.html
-What to highlight:
-- ambient pixel room
-- Flint state changes and occasional friend cameos
-- shared floating Flint assistant on the same page
 
 ### destination_roster_architect
 Roster Architect is an NBA roster and salary-cap simulator.

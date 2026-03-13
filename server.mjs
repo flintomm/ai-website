@@ -1,9 +1,8 @@
-import { createServer, request as httpRequest } from "node:http";
-import { appendFileSync, createReadStream, mkdirSync, readFileSync, statSync } from "node:fs";
+import { createServer } from "node:http";
+import { createReadStream, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
-import { MiniverseServer } from "@miniverse/server";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,10 +10,6 @@ const __dirname = path.dirname(__filename);
 const PORT = Number.parseInt(process.env.PORT || "8080", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 const NODE_ENV = process.env.NODE_ENV || "development";
-const CONTACT_EMAIL = String(process.env.SITE_CONTACT_EMAIL || "flint@tphch.com").trim() || "flint@tphch.com";
-
-const DEFAULT_UNLOCK_LOG_PATH = path.join(".data", "site-assistant", "unlock-log.ndjson");
-const UNLOCK_LOG_PATH = resolveStoragePath(process.env.SITE_UNLOCK_LOG_PATH, DEFAULT_UNLOCK_LOG_PATH);
 
 const ALLOWED_ORIGINS = (process.env.SITE_CHAT_ALLOWED_ORIGINS || "")
   .split(",")
@@ -61,14 +56,13 @@ const CONCIERGE_SECTION_FALLBACK = {
   owner_and_host: "Tommy is the Owner of this website. Flint is Tommy's AI assistant and concierge host for visitors.",
   style_policy: "Keep responses brief (1-3 short sentences, usually under 70 words), warm, and practical. Do not offer follow-up suggestions unless the visitor explicitly asks for recommendations. Keep hotel metaphor light (1-2 phrases max) and always use real page names/paths.",
   guidance_policy: "When users ask where to go, suggest 1-3 relevant destinations with real labels and paths.",
-  handoff_policy: `Offer an owner handoff only for explicit hiring/collaboration/contact intent or repeated confusion. When triggered, direct visitors to ${CONTACT_EMAIL}.`
+  handoff_policy: "Offer an owner handoff only for explicit hiring/collaboration/contact intent or repeated confusion."
 };
 const KNOWLEDGE_SECTION_FALLBACK = {
   site_overview: "This website is Flint and Tommy's portfolio with Creative work, Data Dashboards, and Digital Games.",
-  navigation_map: "Main paths: /, /pages/creative/creative-work.html, /pages/creative/flints-world.html, /pages/dashboards/roster-architect/roster-architect.html, /pages/dashboards/budget-calculator/budget-calculator.html, /pages/games/tower-defense.html, /pages/games/board-hub.html",
-  home_page: "Homepage introduces Flint and offers project entry points through the Work section dropdowns, including Flints World under Creative Corner.",
-  creative_corner: "Creative Corner showcases Flints World, between the spaces, and other in-progress creative projects.",
-  flints_world: "Flints World is a top-down pixel room where Flint idles near a desk, cycles through ambient states, and occasionally gets a friend cameo.",
+  navigation_map: "Main paths: /, /pages/creative/creative-work.html, /pages/dashboards/roster-architect/roster-architect.html, /pages/dashboards/budget-calculator/budget-calculator.html, /pages/games/tower-defense.html, /pages/games/board-hub.html",
+  home_page: "Homepage introduces Flint and offers project entry points through the Work section dropdowns.",
+  creative_corner: "Creative Corner showcases between the spaces and in-progress creative projects.",
   roster_architect: "Roster Architect is an NBA roster and salary-cap simulator with setup, draft, and outcome views.",
   budget_calculator: "Budget Calculator is a budget planning dashboard for planned vs actual spending.",
   tower_defense: "Tower Defense is a canvas strategy game with build, wave, pause, and reset controls.",
@@ -77,7 +71,6 @@ const KNOWLEDGE_SECTION_FALLBACK = {
 const DESTINATION_KNOWLEDGE_SECTION = {
   lobby: "home_page",
   creative_corner: "creative_corner",
-  flints_world: "flints_world",
   roster_architect: "roster_architect",
   budget_calculator: "budget_calculator",
   tower_defense: "tower_defense",
@@ -87,8 +80,7 @@ const KNOWLEDGE_KEYWORDS = {
   site_overview: ["website", "site", "portfolio", "projects", "flint", "tommy"],
   navigation_map: ["where", "go", "navigate", "path", "url", "link", "start", "visit", "menu", "home"],
   home_page: ["home", "homepage", "lobby", "work section", "dropdown", "ask flint"],
-  creative_corner: ["creative", "music", "between the spaces", "trailers", "comics", "ambient", "art", "flints world"],
-  flints_world: ["flints world", "flint room", "pixel room", "top-down", "cameo", "friend", "ambient room"],
+  creative_corner: ["creative", "music", "between the spaces", "trailers", "comics", "ambient", "art"],
   roster_architect: ["roster", "architect", "nba", "draft", "salary cap", "luxury tax", "apron", "payroll", "franchise"],
   budget_calculator: ["budget", "income", "expense", "planned", "actual", "safe to spend", "50/30/20", "finale"],
   tower_defense: ["tower", "defense", "wave", "build menu", "credits", "lives", "pause", "reset game", "canvas"],
@@ -110,13 +102,6 @@ const DESTINATIONS = [
     path: "/pages/creative/creative-work.html",
     aliases: ["/pages/creative/creative-work.html", "/pages/creative/index.html"],
     sectionId: "destination_creative"
-  },
-  {
-    key: "flints_world",
-    label: "Flints World",
-    path: "/pages/creative/flints-world.html",
-    aliases: ["/pages/creative/flints-world.html"],
-    sectionId: "destination_flints_world"
   },
   {
     key: "roster_architect",
@@ -155,12 +140,6 @@ const DESTINATIONS = [
 ];
 const CONCIERGE_SECTIONS = loadConciergeSections();
 const SITE_KNOWLEDGE_SECTIONS = loadKnowledgeSections();
-
-function resolveStoragePath(input, fallbackRelativePath) {
-  const raw = String(input || "").trim();
-  if (!raw) return path.join(__dirname, fallbackRelativePath);
-  return path.isAbsolute(raw) ? raw : path.join(__dirname, raw);
-}
 
 function parseGuideSections(raw) {
   const sections = {};
@@ -311,45 +290,6 @@ function dedupePreserveOrder(values) {
     unique.push(value);
   }
   return unique;
-}
-
-function truncateString(value, max = 300) {
-  return String(value || "").trim().slice(0, max);
-}
-
-function normalizeEmail(value) {
-  return truncateString(value, 320).toLowerCase();
-}
-
-function isValidEmailAddress(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
-}
-
-function sanitizeHeaderValue(value, max = 300) {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => truncateString(item, max))
-      .filter(Boolean)
-      .join(", ")
-      .slice(0, max);
-  }
-  return truncateString(value, max);
-}
-
-function parseForwardedFor(value) {
-  return sanitizeHeaderValue(value, 1000)
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, 10);
-}
-
-function clientIpFromRequest(req) {
-  const cloudflareIp = sanitizeHeaderValue(req.headers["cf-connecting-ip"], 120);
-  const forwardedIps = parseForwardedFor(req.headers["x-forwarded-for"]);
-  const realIp = sanitizeHeaderValue(req.headers["x-real-ip"], 120);
-  const socketIp = sanitizeHeaderValue(req.socket?.remoteAddress, 120);
-  return cloudflareIp || forwardedIps[0] || realIp || socketIp || "unknown";
 }
 
 function keywordScore(text, keywords) {
@@ -515,55 +455,6 @@ function sanitizePage(page) {
   };
 }
 
-function sanitizeUnlockPage(page) {
-  if (!page || typeof page !== "object") return null;
-  const ts = Number(page.ts);
-
-  return {
-    url: truncateString(page.url, 1000),
-    title: truncateString(page.title, 300),
-    siteName: truncateString(page.siteName, 160),
-    path: truncateString(page.path, 300),
-    referrer: truncateString(page.referrer, 1000),
-    ts: Number.isFinite(ts) && ts > 0 ? ts : Date.now()
-  };
-}
-
-function writeUnlockLog(req, payload) {
-  const now = new Date();
-  const forwardedIps = parseForwardedFor(req.headers["x-forwarded-for"]);
-  const record = {
-    id: `unlock_${now.getTime()}_${Math.random().toString(36).slice(2, 10)}`,
-    type: "site_assistant_unlock",
-    timestamp: now.toISOString(),
-    ts: now.getTime(),
-    email: normalizeEmail(payload.email),
-    contactEmail: CONTACT_EMAIL,
-    ip: clientIpFromRequest(req),
-    ipChain: forwardedIps,
-    sessionId: truncateString(payload.sessionId, 120),
-    source: truncateString(payload.source || "site-assistant-email-gate", 120),
-    page: sanitizeUnlockPage(payload.page),
-    request: {
-      host: sanitizeHeaderValue(req.headers.host, 200),
-      origin: sanitizeHeaderValue(req.headers.origin, 600),
-      referer: sanitizeHeaderValue(req.headers.referer, 1000),
-      userAgent: sanitizeHeaderValue(req.headers["user-agent"], 600),
-      acceptLanguage: sanitizeHeaderValue(req.headers["accept-language"], 200),
-      forwardedProto: sanitizeHeaderValue(req.headers["x-forwarded-proto"], 40),
-      forwardedHost: sanitizeHeaderValue(req.headers["x-forwarded-host"], 200),
-      realIp: sanitizeHeaderValue(req.headers["x-real-ip"], 120),
-      cfConnectingIp: sanitizeHeaderValue(req.headers["cf-connecting-ip"], 120),
-      cfRay: sanitizeHeaderValue(req.headers["cf-ray"], 120),
-      cfIpCountry: sanitizeHeaderValue(req.headers["cf-ipcountry"], 40)
-    }
-  };
-
-  mkdirSync(path.dirname(UNLOCK_LOG_PATH), { recursive: true });
-  appendFileSync(UNLOCK_LOG_PATH, `${JSON.stringify(record)}\n`, "utf8");
-  return record;
-}
-
 function resolveModelRef(inputRef) {
   const requested = String(inputRef || DEFAULT_MODEL).trim();
   if (MODEL_ALLOWLIST.includes(requested)) return requested;
@@ -577,59 +468,11 @@ function minimaxModelId(modelRef) {
 
 function parseAssistantText(data) {
   const blocks = Array.isArray(data?.content) ? data.content : [];
-  const fromBlocks = blocks
+  return blocks
     .filter((b) => b?.type === "text" && typeof b?.text === "string")
     .map((b) => b.text)
     .join("\n\n")
     .trim();
-
-  if (fromBlocks) return fromBlocks;
-
-  const directText = [
-    data?.output_text,
-    data?.outputText,
-    data?.completion,
-    data?.text
-  ].find((value) => typeof value === "string" && value.trim());
-
-  return typeof directText === "string" ? directText.trim() : "";
-}
-
-function assistantBlockTypes(data) {
-  const blocks = Array.isArray(data?.content) ? data.content : [];
-  return blocks
-    .map((block) => String(block?.type || "unknown"))
-    .slice(0, 12);
-}
-
-function hasVisibleTextBlock(data) {
-  const blocks = Array.isArray(data?.content) ? data.content : [];
-  return blocks.some((block) => block?.type === "text" && typeof block?.text === "string" && block.text.trim());
-}
-
-function hasThinkingOnlyResponse(data) {
-  const blocks = Array.isArray(data?.content) ? data.content : [];
-  const hasThinking = blocks.some((block) => block?.type === "thinking");
-  return hasThinking && !hasVisibleTextBlock(data);
-}
-
-function summarizeAssistantPayload(data) {
-  const usage = data?.usage && typeof data.usage === "object"
-    ? {
-        input_tokens: data.usage.input_tokens,
-        output_tokens: data.usage.output_tokens,
-        cache_creation_input_tokens: data.usage.cache_creation_input_tokens,
-        cache_read_input_tokens: data.usage.cache_read_input_tokens
-      }
-    : null;
-
-  return {
-    id: typeof data?.id === "string" ? data.id : "",
-    model: typeof data?.model === "string" ? data.model : "",
-    stop_reason: typeof data?.stop_reason === "string" ? data.stop_reason : "",
-    content_types: assistantBlockTypes(data),
-    usage
-  };
 }
 
 function currentPageSummary(page, destination) {
@@ -674,7 +517,6 @@ function buildSystemPrompt(page, messages) {
     "Do not add follow-up questions, next steps, or extra suggestions unless the user explicitly asks for recommendations or navigation options.",
     "Treat the website like a hotel metaphor lightly (max 1-2 phrases per response).",
     "Be warm, concise, and practical. Default to reactive behavior: answer directly unless asked for guidance.",
-    `If the visitor wants to contact Tommy, hire, collaborate, or send a project inquiry, direct them to ${CONTACT_EMAIL}.`,
     "The current page block below is authoritative for where the visitor is right now.",
     "If the user asks what page they are on, where they are, or what this page is, answer from the current destination/page block first.",
     "Prefer the real destination label and real path when identifying the current page.",
@@ -704,59 +546,33 @@ async function callMiniMax({ modelRef, messages, page }) {
   }
 
   const endpoint = `${MINIMAX_BASE_URL}/v1/messages`;
-  const baseMaxTokens = Number.parseInt(process.env.SITE_CHAT_MAX_TOKENS || "320", 10);
+  const payload = {
+    model: minimaxModelId(modelRef),
+    max_tokens: Number.parseInt(process.env.SITE_CHAT_MAX_TOKENS || "220", 10),
+    temperature: Number.parseFloat(process.env.SITE_CHAT_TEMPERATURE || "0.2"),
+    system: buildSystemPrompt(page, messages),
+    messages
+  };
 
-  async function requestCompletion({ maxTokens, requireVisibleText }) {
-    const systemPrompt = requireVisibleText
-      ? `${buildSystemPrompt(page, messages)}\nReturn at least one final answer as a visible text content block. Do not reply with thinking content only.`
-      : buildSystemPrompt(page, messages);
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${MINIMAX_API_KEY}`,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify(payload)
+  });
 
-    const payload = {
-      model: minimaxModelId(modelRef),
-      max_tokens: maxTokens,
-      temperature: Number.parseFloat(process.env.SITE_CHAT_TEMPERATURE || "0.2"),
-      system: systemPrompt,
-      messages
-    };
-
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${MINIMAX_API_KEY}`,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`MiniMax request failed: ${res.status} ${err.slice(0, 180)}`);
-    }
-
-    return res.json();
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MiniMax request failed: ${res.status} ${err.slice(0, 180)}`);
   }
 
-  let data = await requestCompletion({
-    maxTokens: baseMaxTokens,
-    requireVisibleText: false
-  });
-
-  let text = parseAssistantText(data);
-  if (text) return text;
-
-  console.warn("[site-chat] MiniMax returned no visible text", summarizeAssistantPayload(data));
-
-  data = await requestCompletion({
-    maxTokens: hasThinkingOnlyResponse(data) ? Math.max(baseMaxTokens * 2, 480) : Math.max(baseMaxTokens, 360),
-    requireVisibleText: true
-  });
-
-  text = parseAssistantText(data);
-  if (text) return text;
-
-  console.warn("[site-chat] MiniMax retry also returned no visible text", summarizeAssistantPayload(data));
-  return "I lost the last reply while loading it. Please ask that again.";
+  const data = await res.json();
+  const text = parseAssistantText(data);
+  if (!text) throw new Error("MiniMax returned an empty response.");
+  return text;
 }
 
 function safeResolveStatic(urlPath) {
@@ -847,44 +663,6 @@ async function handleChatMessage(req, res, options = {}) {
   }
 }
 
-async function handleUnlockSubmission(req, res) {
-  if (!enforceRateLimit(req)) {
-    sendJson(res, 429, { ok: false, error: "Rate limit exceeded. Please retry shortly." });
-    return;
-  }
-
-  try {
-    const body = await readJsonBody(req);
-    const email = normalizeEmail(body?.email);
-    const sessionId = truncateString(body?.sessionId, 120);
-    const source = truncateString(body?.source || "site-assistant-email-gate", 120);
-    const page = sanitizeUnlockPage(body?.page);
-
-    if (!isValidEmailAddress(email)) {
-      sendJson(res, 400, { ok: false, error: "A valid email address is required." });
-      return;
-    }
-
-    const record = writeUnlockLog(req, {
-      email,
-      sessionId,
-      source,
-      page
-    });
-
-    sendJson(res, 201, {
-      ok: true,
-      contactEmail: CONTACT_EMAIL,
-      loggedAt: record.timestamp
-    });
-  } catch (error) {
-    sendJson(res, 500, {
-      ok: false,
-      error: error instanceof Error ? error.message : "Unexpected server error"
-    });
-  }
-}
-
 const server = createServer(async (req, res) => {
   const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const pathname = requestUrl.pathname;
@@ -927,18 +705,8 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "POST" && pathname === "/api/chat/unlock") {
-    await handleUnlockSubmission(req, res);
-    return;
-  }
-
   if (req.method === "POST" && pathname === "/api/site-chat/chat") {
     await handleChatMessage(req, res, { legacyShape: true });
-    return;
-  }
-
-  if (req.method === "POST" && pathname === "/api/site-chat/unlock") {
-    await handleUnlockSubmission(req, res);
     return;
   }
 
@@ -947,103 +715,12 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // --- Miniverse API proxy ---
-  const MV_PROXY_PATHS = [
-    "/api/agents", "/api/heartbeat", "/api/agents/remove",
-    "/api/info", "/api/observe", "/api/act", "/api/events",
-    "/api/channels", "/api/inbox", "/api/webhook", "/api/generate",
-  ];
-
-  if (MV_PROXY_PATHS.some((p) => pathname === p) || pathname.startsWith("/api/hooks/claude-code")) {
-    proxyToMiniverse(req, res, mvPortRef);
-    return;
-  }
-
   serveStatic(req, res);
 });
 
-let mvPortRef = 4321;
-
-function proxyToMiniverse(clientReq, clientRes, port) {
-  const proxyReq = httpRequest(
-    {
-      hostname: "127.0.0.1",
-      port,
-      path: clientReq.url,
-      method: clientReq.method,
-      headers: { ...clientReq.headers, host: `127.0.0.1:${port}` },
-    },
-    (proxyRes) => {
-      // Copy CORS from miniverse but let our own setCorsHeaders handle it if needed
-      clientRes.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(clientRes, { end: true });
-    }
-  );
-
-  proxyReq.on("error", () => {
-    if (!clientRes.headersSent) {
-      sendJson(clientRes, 502, { error: "Miniverse server unreachable" });
-    }
-  });
-
-  clientReq.pipe(proxyReq, { end: true });
-}
-
-const miniverse = new MiniverseServer({
-  port: 4321,
-  publicDir: path.join(__dirname, "public"),
-});
-
-// WebSocket upgrade proxy: forward /ws to Miniverse
-server.on("upgrade", (req, socket, head) => {
-  const url = new URL(req.url || "/", `http://localhost`);
-  if (url.pathname !== "/ws") {
-    socket.destroy();
-    return;
-  }
-
-  const proxyReq = httpRequest({
-    hostname: "127.0.0.1",
-    port: mvPortRef,
-    path: "/ws",
-    method: "GET",
-    headers: { ...req.headers, host: `127.0.0.1:${mvPortRef}` },
-  });
-
-  proxyReq.on("upgrade", (proxyRes, proxySocket, proxyHead) => {
-    // Send the HTTP 101 response back to the original client
-    let rawHead = `HTTP/1.1 101 Switching Protocols\r\n`;
-    for (const [key, value] of Object.entries(proxyRes.headers)) {
-      if (Array.isArray(value)) {
-        for (const v of value) rawHead += `${key}: ${v}\r\n`;
-      } else if (value) {
-        rawHead += `${key}: ${value}\r\n`;
-      }
-    }
-    rawHead += "\r\n";
-    socket.write(rawHead);
-    if (proxyHead.length > 0) socket.write(proxyHead);
-
-    // Bidirectional pipe
-    proxySocket.pipe(socket);
-    socket.pipe(proxySocket);
-
-    proxySocket.on("error", () => socket.destroy());
-    socket.on("error", () => proxySocket.destroy());
-    proxySocket.on("close", () => socket.destroy());
-    socket.on("close", () => proxySocket.destroy());
-  });
-
-  proxyReq.on("error", () => socket.destroy());
-  proxyReq.end();
-});
-
-server.listen(PORT, HOST, async () => {
+server.listen(PORT, HOST, () => {
   if (NODE_ENV === "production") {
     console.log("Running static server with MiniMax chat proxy.");
   }
   console.log(`AI Website server running on http://${HOST}:${PORT}`);
-
-  mvPortRef = await miniverse.start();
-  console.log(`Miniverse server running internally on port ${mvPortRef}`);
 });

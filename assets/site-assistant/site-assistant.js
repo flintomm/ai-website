@@ -546,60 +546,26 @@
   }
 
   async function submitEmailGate(email) {
-    const normalizedEmail = String(email || "").trim().toLowerCase();
-    emitGateState("unlocking", { email: normalizedEmail });
-    state.pendingGateError = "";
+    emitGateState("unlocking", { email });
     els.gateError.textContent = "";
     els.gateProgress.textContent = "Unlocking...";
     els.gateSubmit.disabled = true;
 
+    state.unlocked = true;
+    state.freshUnlock = true;
     try {
-      const response = await fetch(toApiUrl("/api/site-chat/unlock"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: normalizedEmail,
-          sessionId: state.sessionId,
-          source: "site-assistant-email-gate",
-          page: buildPageView()
-        })
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`unlock ${response.status}: ${text.slice(0, 140)}`);
-      }
-
-      const data = await response.json();
-      if (!data?.ok) throw new Error("unlock rejected");
-
-      state.unlocked = true;
-      state.freshUnlock = true;
-      try {
-        localStorage.setItem(STORAGE.unlocked, "1");
-        localStorage.setItem(STORAGE.email, normalizedEmail);
-      } catch {
-        // no-op
-      }
-      emitGateState("unlocked", { email: normalizedEmail });
-      appendSystemLine("gate unlocked", "ready");
-      updateUiForGateState();
-      setStatus("ready", "ready");
-    } catch (error) {
-      state.unlocked = false;
-      state.freshUnlock = false;
-      state.pendingGateError = "Unable to save your email right now. Please try again.";
-      emitGateState("error", {
-        email: normalizedEmail,
-        error: formatErrorMessage(error)
-      });
-      appendSystemLine(`unlock failed: ${formatErrorMessage(error)}`, "error");
-      updateUiForGateState();
-      setStatus("locked", "error");
-    } finally {
-      els.gateSubmit.disabled = false;
-      els.gateProgress.textContent = "";
+      localStorage.setItem(STORAGE.unlocked, "1");
+      localStorage.setItem(STORAGE.email, email);
+    } catch {
+      // no-op
     }
+
+    emitGateState("unlocked", { email });
+    appendSystemLine("gate unlocked", "ready");
+    updateUiForGateState();
+    setStatus("ready", "ready");
+    els.gateSubmit.disabled = false;
+    els.gateProgress.textContent = "";
   }
 
   function playVaultAnimation(onComplete) {

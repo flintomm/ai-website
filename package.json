@@ -9,8 +9,6 @@
     "dev": "node server.mjs"
   },
   "dependencies": {
-    "@miniverse/core": "^0.2.5",
-    "@miniverse/server": "^0.2.8",
     "dotenv": "^16.4.7"
   },
   "engines": {
