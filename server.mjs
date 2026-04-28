@@ -59,32 +59,23 @@ const CONCIERGE_SECTION_FALLBACK = {
   handoff_policy: "Offer an owner handoff only for explicit hiring/collaboration/contact intent or repeated confusion."
 };
 const KNOWLEDGE_SECTION_FALLBACK = {
-  site_overview: "This website is Flint and Tommy's portfolio with Creative work, Data Dashboards, and Digital Games.",
-  navigation_map: "Main paths: /, /pages/creative/creative-work.html, /pages/dashboards/roster-architect/roster-architect.html, /pages/dashboards/budget-calculator/budget-calculator.html, /pages/games/tower-defense.html, /pages/games/board-hub.html",
+  site_overview: "This website is Flint and Tommy's portfolio featuring Data Dashboards.",
+  navigation_map: "Main paths: /, /pages/dashboards/roster-architect/roster-architect.html, /pages/dashboards/budget-calculator/budget-calculator.html",
   home_page: "Homepage introduces Flint and offers project entry points through the Work section dropdowns.",
-  creative_corner: "Creative Corner showcases between the spaces and in-progress creative projects.",
   roster_architect: "Roster Architect is an NBA roster and salary-cap simulator with setup, draft, and outcome views.",
-  budget_calculator: "Budget Calculator is a budget planning dashboard for planned vs actual spending.",
-  tower_defense: "Tower Defense is a canvas strategy game with build, wave, pause, and reset controls.",
-  board_arcade: "Board Arcade includes Tic-Tac-Toe, Checkers, and Chess with reset controls."
+  budget_calculator: "Budget Calculator is a budget planning dashboard for planned vs actual spending."
 };
 const DESTINATION_KNOWLEDGE_SECTION = {
   lobby: "home_page",
-  creative_corner: "creative_corner",
   roster_architect: "roster_architect",
-  budget_calculator: "budget_calculator",
-  tower_defense: "tower_defense",
-  board_arcade: "board_arcade"
+  budget_calculator: "budget_calculator"
 };
 const KNOWLEDGE_KEYWORDS = {
   site_overview: ["website", "site", "portfolio", "projects", "flint", "tommy"],
   navigation_map: ["where", "go", "navigate", "path", "url", "link", "start", "visit", "menu", "home"],
   home_page: ["home", "homepage", "lobby", "work section", "dropdown", "ask flint"],
-  creative_corner: ["creative", "music", "between the spaces", "trailers", "comics", "ambient", "art"],
   roster_architect: ["roster", "architect", "nba", "draft", "salary cap", "luxury tax", "apron", "payroll", "franchise"],
   budget_calculator: ["budget", "income", "expense", "planned", "actual", "safe to spend", "50/30/20", "finale"],
-  tower_defense: ["tower", "defense", "wave", "build menu", "credits", "lives", "pause", "reset game", "canvas"],
-  board_arcade: ["board arcade", "tic", "tac", "toe", "checkers", "chess", "flip board", "swap first player"],
   common_routes: ["recommend", "explore", "what should i", "where to start", "next step", "tour"],
   troubleshooting: ["bug", "broken", "doesnt work", "doesn't work", "error", "issue", "load", "not working"]
 };
@@ -95,13 +86,6 @@ const DESTINATIONS = [
     path: "/",
     aliases: ["/", "/index.html"],
     sectionId: "destination_lobby"
-  },
-  {
-    key: "creative_corner",
-    label: "Creative Corner",
-    path: "/pages/creative/creative-work.html",
-    aliases: ["/pages/creative/creative-work.html", "/pages/creative/index.html"],
-    sectionId: "destination_creative"
   },
   {
     key: "roster_architect",
@@ -122,20 +106,6 @@ const DESTINATIONS = [
       "/pages/dashboards/budget-calculator/index.html"
     ],
     sectionId: "destination_budget_calculator"
-  },
-  {
-    key: "tower_defense",
-    label: "Tower Defense",
-    path: "/pages/games/tower-defense.html",
-    aliases: ["/pages/games/tower-defense.html", "/pages/games/index.html"],
-    sectionId: "destination_tower_defense"
-  },
-  {
-    key: "board_arcade",
-    label: "Board Arcade",
-    path: "/pages/games/board-hub.html",
-    aliases: ["/pages/games/board-hub.html"],
-    sectionId: "destination_board_arcade"
   }
 ];
 const CONCIERGE_SECTIONS = loadConciergeSections();

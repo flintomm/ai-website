@@ -1,37 +1,21 @@
 ### site_overview
-This site is Flint and Tommy's portfolio with three main areas: Creative work, Data Dashboards, and Digital Games.
-The homepage is the primary entry point and contains dropdown links into each project category.
+This site is Flint and Tommy's portfolio featuring Data Dashboards.
+The homepage is the primary entry point and contains a dropdown link into the dashboards.
 The assistant should reference real project labels and paths only.
 
 ### navigation_map
 Primary paths:
 - Home (Lobby): `/`
-- Creative Corner: `/pages/creative/creative-work.html`
 - Roster Architect: `/pages/dashboards/roster-architect/roster-architect.html`
 - Budget Calculator: `/pages/dashboards/budget-calculator/budget-calculator.html`
-- Tower Defense: `/pages/games/tower-defense.html`
-- Board Arcade: `/pages/games/board-hub.html`
 Global back links on subpages return to `index.html#section-4` (Work section on the homepage).
 
 ### home_page
 Homepage experience highlights:
 - Fixed wordmark menu bar with Flint branding.
 - Scroll-driven sections introducing Flint and project approach.
-- Work section includes three dropdown categories:
-  - Creative Corner
-  - Data Dashboards
-  - Digital Games
-- Creative link in Work section points to external project `https://www.tymmop.com` via "between the spaces".
+- Work section includes a Data Dashboards dropdown with the Roster Architect and Budget Calculator entries.
 - Footer includes a Flint email mailto and a LinkedIn link.
-
-### creative_corner
-Creative Corner page path: `/pages/creative/creative-work.html`.
-Main intent: showcase creative projects and active/in-progress concepts.
-Current cards:
-- between the spaces (Live) with external link to `https://www.tymmop.com`
-- Movie Trailers (In Progress)
-- Comics (In Progress)
-Tone of this page is artistic and storytelling-focused.
 
 ### roster_architect
 Roster Architect path: `/pages/dashboards/roster-architect/roster-architect.html`.
@@ -64,41 +48,11 @@ Major sections:
 - Visualization controls (group by, chart type, metric)
 Data persists in browser session storage for the active session.
 
-### tower_defense
-Tower Defense path: `/pages/games/tower-defense.html`.
-Purpose: real-time canvas strategy game.
-Gameplay surfaces:
-- Main canvas (`#game`) with HUD chips for Credits, Wave, Enemies, Lives.
-- Build panel showing tower list and tower inspect details.
-- Control buttons:
-  - Start Next Wave
-  - Pause
-  - Reset
-On-page tip: select a tower, then click on the map to place it.
-Tech strip references Canvas API, Waypoint Pathing, Wave Engine, and Vanilla JS.
-
-### board_arcade
-Board Arcade path: `/pages/games/board-hub.html`.
-Purpose: multi-game strategy suite with tabbed classic games.
-Game tabs:
-- Tic-Tac-Toe
-- Checkers
-- Chess
-Common controls:
-- Tic-Tac-Toe: Reset, Swap First Player
-- Checkers: Reset, Swap First Player
-- Chess: Reset, Flip Board
-Game status text updates in each panel (for turns, check/checkmate/stalemate, winners, etc.).
-Tech strip references Rules Engine, Move Validation, Canvas UI, and Vanilla JS.
-
 ### common_routes
 If user asks where to start:
 - New visitor overview: Home (`/`)
-- Creative/media interest: Creative Corner (`/pages/creative/creative-work.html`)
 - Sports simulation interest: Roster Architect (`/pages/dashboards/roster-architect/roster-architect.html`)
 - Personal finance planning interest: Budget Calculator (`/pages/dashboards/budget-calculator/budget-calculator.html`)
-- Action game interest: Tower Defense (`/pages/games/tower-defense.html`)
-- Board game interest: Board Arcade (`/pages/games/board-hub.html`)
 When suggesting routes, prefer 1-3 destinations max and include explicit paths.
 
 ### troubleshooting

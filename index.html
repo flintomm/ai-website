@@ -92,41 +92,6 @@
 
     .section:not(.hero) { background: var(--bg); position: relative; z-index: 2; }
 
-    .hero-video {
-      position: absolute;
-      bottom: 2rem;
-      left: 2rem;
-      width: 180px;
-      height: 101px;
-      object-fit: cover;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 5s ease;
-      border: 1px solid var(--border);
-    }
-
-    .hero-video.loaded { opacity: 0.55; }
-
-    .hero-video.loaded:not(.fullscreen) {
-      animation: screen-flicker 5s infinite;
-    }
-
-    @keyframes screen-flicker {
-      0%, 91%, 93%, 95%, 100% { filter: brightness(1); }
-      92%   { filter: brightness(0.4); }
-      94%   { filter: brightness(1.2); }
-      94.5% { filter: brightness(0.2); }
-    }
-
-    .hero-video.fade-out {
-      opacity: 0;
-    }
-
-    .hero-video.fullscreen {
-      border: none;
-      animation: none;
-    }
-
     .hero-content {
       display: flex;
       align-items: center;
@@ -504,51 +469,6 @@
       fill: currentColor;
     }
 
-    /* ===== SITE FRAME (iframe overlay) ===== */
-    .site-frame {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 400;
-      display: none;
-      flex-direction: column;
-      background: #000;
-    }
-    .site-frame.open { display: flex; }
-    .site-frame iframe { flex: 1; width: 100%; border: none; }
-
-    .frame-nav {
-      padding: 1.2rem 2rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-
-    .frame-back {
-      font-family: var(--font);
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      min-height: var(--touch-target);
-      transition: color 0.15s;
-    }
-    .frame-back:hover { color: #fff; }
-
-    .frame-tag {
-      font-size: 0.62rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 300;
-    }
-
     /* ===== RESPONSIVE ===== */
     @media (max-width: 700px) {
       #section-4 .showcase-inner {
@@ -586,10 +506,6 @@
         font-size: 0.72rem;
         letter-spacing: 0.06em;
       }
-      .frame-nav {
-        padding-left: calc(var(--mobile-pad) + env(safe-area-inset-left));
-        padding-right: calc(var(--mobile-pad) + env(safe-area-inset-right));
-      }
     }
 
     @media (max-width: 900px) {
@@ -601,14 +517,6 @@
         padding-right: calc(var(--mobile-pad) + env(safe-area-inset-right));
       }
       .wordmark-tag { letter-spacing: 0.14em; }
-      .hero-video {
-        width: 132px;
-        height: 74px;
-        bottom: 1rem;
-        left: 1rem;
-      }
-      .frame-nav { padding: 0.9rem 1rem; }
-      .frame-tag { letter-spacing: 0.18em; }
     }
 
     @media (max-height: 520px) and (orientation: landscape) {
@@ -616,12 +524,6 @@
       .site-wordmark { padding: 0.65rem 1rem; }
       .section-label { top: 1rem; }
       .scroll-hint { display: none; }
-      .hero-video {
-        width: 110px;
-        height: 62px;
-        bottom: 0.75rem;
-        left: 0.75rem;
-      }
     }
 
     /* ===== REDUCED MOTION ===== */
@@ -659,7 +561,6 @@
 
     <!-- S0: Hero -->
     <section class="section hero" id="section-0" data-section="0">
-      <video class="hero-video" src="assets/screensaver.mp4" autoplay muted loop playsinline></video>
       <div class="hero-content"></div>
       <div class="scroll-hint" id="scrollHint">
         <div class="scroll-line"></div>
@@ -711,25 +612,10 @@
 
         <div class="work-cloud" id="workCloud">
           <details class="work-dropdown">
-            <summary class="work-btn">Creative Corner</summary>
-            <div class="work-dropdown-menu">
-              <a href="https://www.tymmop.com" target="_blank" rel="noopener noreferrer nofollow external"><span class="work-item-main"><span>between the spaces</span><span class="work-desc">Music · ambient electronic</span></span></a>
-            </div>
-          </details>
-
-          <details class="work-dropdown">
             <summary class="work-btn">Data Dashboards</summary>
             <div class="work-dropdown-menu">
               <a href="pages/dashboards/roster-architect/roster-architect.html"><span class="work-item-main"><span>Roster Architect</span><span class="work-desc">NBA simulator · snake draft + salary-cap engine</span></span></a>
               <a href="pages/dashboards/budget-calculator/budget-calculator.html"><span class="work-item-main"><span>Budget Calculator</span><span class="work-desc">Income + expense planner · live charts and budget signals</span></span></a>
-            </div>
-          </details>
-
-          <details class="work-dropdown">
-            <summary class="work-btn">Digital Games</summary>
-            <div class="work-dropdown-menu">
-              <a href="pages/games/tower-defense.html"><span class="work-item-main"><span>Tower Defense</span><span class="work-desc">Canvas game · wave engine + waypoint pathing</span></span></a>
-              <a href="pages/games/board-hub.html"><span class="work-item-main"><span>Board Arcade</span><span class="work-desc">Chess, Checkers, Tic-Tac-Toe · rules engine</span></span></a>
             </div>
           </details>
         </div>
@@ -748,15 +634,6 @@
 
   </main>
 
-  <!-- Site frame overlay -->
-  <div class="site-frame" id="siteFrame">
-    <nav class="frame-nav">
-      <button class="frame-back" id="frameBack">< Flint</button>
-      <span class="frame-tag">Creative Corner</span>
-    </nav>
-    <iframe id="siteFrameIframe" src="" title="External site" allowfullscreen></iframe>
-  </div>
-
   <script>
     const SCROLL_KEY = 'flint_home_scroll_y_v1';
     const sections      = document.querySelectorAll('main [data-section]');
@@ -764,14 +641,8 @@
     const workDropdowns = document.querySelectorAll('.work-dropdown');
     const progressBar   = document.getElementById('progressBar');
     const scrollHint    = document.getElementById('scrollHint');
-    const heroVideo     = document.querySelector('.hero-video');
-    const siteFrame       = document.getElementById('siteFrame');
-    const siteFrameIframe = document.getElementById('siteFrameIframe');
-    const frameBack       = document.getElementById('frameBack');
 
     let currentSection = 0;
-    let videoExpanded  = false;
-    let bgClickHandler = null;
 
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
@@ -820,45 +691,10 @@
       }
     }
 
-    function openSiteFrame(url) {
-      siteFrameIframe.src = url;
-      siteFrame.classList.add('open');
-    }
-
-    function closeSiteFrame() {
-      siteFrame.classList.remove('open');
-      siteFrameIframe.src = '';
-    }
-
     function init() {
       restoreInitialScrollPosition();
 
-      // Fade in video when loaded
-      if (heroVideo) {
-        heroVideo.addEventListener('loadeddata', () => {
-          heroVideo.classList.add('loaded');
-        });
-        // Fallback: fade in after short delay even if loadeddata doesn't fire
-        setTimeout(() => heroVideo.classList.add('loaded'), 500);
-        heroVideo.addEventListener('click', toggleVideoExpand);
-      }
-
-      // Intercept tymmop.com link to open in-page frame
-      const tymmopLink = document.querySelector('a[href="https://www.tymmop.com"]');
-      if (tymmopLink) {
-        tymmopLink.addEventListener('click', (e) => {
-          e.preventDefault();
-          openSiteFrame('https://www.tymmop.com');
-        });
-      }
-
-      // Back button closes frame
-      if (frameBack) {
-        frameBack.addEventListener('click', closeSiteFrame);
-      }
-
       setupObserver();
-      setupNavigation();
       setupDropdownHover();
       onScroll();
     }
@@ -887,72 +723,10 @@
       fadeElements.forEach(el => observer.observe(el));
     }
 
-    function toggleVideoExpand() {
-      if (!heroVideo) return;
-      videoExpanded = !videoExpanded;
-      const DUR = '0.4s cubic-bezier(0.4,0,0.2,1)';
-      const TRANS = `top ${DUR}, left ${DUR}, width ${DUR}, height ${DUR}`;
-
-      if (videoExpanded) {
-        // FLIP: capture current viewport coords of the absolute element
-        const rect = heroVideo.getBoundingClientRect();
-        heroVideo.style.position = 'fixed';
-        heroVideo.style.top    = rect.top + 'px';
-        heroVideo.style.left   = rect.left + 'px';
-        heroVideo.style.width  = rect.width + 'px';
-        heroVideo.style.height = rect.height + 'px';
-        heroVideo.style.zIndex = '1';
-        heroVideo.style.border = 'none';
-        heroVideo.style.transition = 'none';
-        heroVideo.style.opacity = '1';
-        heroVideo.classList.add('fullscreen');
-        // Force reflow then animate to fullscreen
-        void heroVideo.offsetWidth;
-        heroVideo.style.transition = TRANS;
-        heroVideo.style.top    = '0';
-        heroVideo.style.left   = '0';
-        heroVideo.style.width  = '100%';
-        heroVideo.style.height = '100%';
-        // Attach background click-to-minimize listener (delayed to avoid self-trigger)
-        setTimeout(() => {
-          bgClickHandler = function(e) {
-            if (e.target.closest('a, button, summary')) return;
-            toggleVideoExpand();
-          };
-          document.addEventListener('click', bgClickHandler);
-        }, 50);
-      } else {
-        // Remove background click listener
-        if (bgClickHandler) {
-          document.removeEventListener('click', bgClickHandler);
-          bgClickHandler = null;
-        }
-        // Animate back to bottom-left corner, then snap to absolute
-        heroVideo.style.opacity = '1';
-        heroVideo.style.transition = TRANS;
-        const targetTop = window.innerHeight - 32 - 101;
-        heroVideo.style.top    = targetTop + 'px';
-        heroVideo.style.left   = '32px';
-        heroVideo.style.width  = '180px';
-        heroVideo.style.height = '101px';
-        setTimeout(() => {
-          heroVideo.removeAttribute('style');
-          heroVideo.classList.remove('fullscreen');
-          onScroll();
-        }, 400);
-      }
-    }
-
     function onScroll() {
       const scrollY   = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       progressBar.style.transform = `scaleX(${docHeight > 0 ? scrollY / docHeight : 0})`;
-
-      // When video is expanded as background, fade it out as user scrolls.
-      if (heroVideo && videoExpanded) {
-        const fadeEnd = window.innerHeight * 0.5;
-        heroVideo.style.opacity = String(Math.max(0, 1 - scrollY / fadeEnd));
-      }
 
       let nearestIndex = currentSection;
       let nearestDist = Infinity;
@@ -969,15 +743,6 @@
       currentSection = nearestIndex;
 
       scrollHint.classList.toggle('hidden', currentSection !== 0);
-    }
-
-    function setupNavigation() {
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && videoExpanded) {
-          e.preventDefault();
-          toggleVideoExpand();
-        }
-      });
     }
 
     function setupDropdownHover() {
