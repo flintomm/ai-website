@@ -15,6 +15,4 @@ Spreadsheet-style budget planner for tracking planned vs actual spending across 
 
 ## Run
 
-Open:
-
-`/Users/flint/Documents/AI Website/pages/dashboards/budget-calculator/budget-calculator.html`
+Open `budget-calculator.html` in a browser.

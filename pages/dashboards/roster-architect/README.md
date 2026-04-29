@@ -36,7 +36,7 @@ All rule values are editable in the UI.
 
 ## Run
 
-Open `/Users/flint/Documents/AI Website/AI Dashboard/index.html` in a browser.
+Open `roster-architect.html` in a browser.
 
 ## Sources for cap thresholds
 
