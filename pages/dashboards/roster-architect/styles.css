@@ -20,7 +20,7 @@
 
 * { box-sizing: border-box; }
 
-html { -webkit-tap-highlight-color: transparent; }
+html { -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
 
 body {
   margin: 0;
@@ -31,6 +31,7 @@ body {
   min-height: 100svh;
   min-height: 100dvh;
   overscroll-behavior-y: none;
+  overflow-x: hidden;
 }
 
 .bg-grid { display: none; }
@@ -547,9 +548,20 @@ footer p {
   .site-nav { padding-left: calc(var(--mobile-pad) + var(--safe-left)); padding-right: calc(var(--mobile-pad) + var(--safe-right)); }
   .tech-strip { padding-left: var(--mobile-pad); padding-right: var(--mobile-pad); }
   .site-tag { letter-spacing: 0.16em; }
-  header, main, footer { width: 96vw; }
+
+  /* Use full viewport with safe-area padding instead of a 96vw clamp.
+     Prevents the page from leaving an awkward right gutter and lets
+     panels run edge-to-edge. */
+  header, main, footer {
+    width: auto;
+    margin: 0;
+    padding-left: calc(var(--mobile-pad) + var(--safe-left));
+    padding-right: calc(var(--mobile-pad) + var(--safe-right));
+  }
+  main { gap: 0.75rem; }
   header {
-    padding: 1.2rem 0 0.9rem;
+    padding-top: 1.2rem;
+    padding-bottom: 0.9rem;
     margin-bottom: 0.75rem;
   }
   h1 { font-size: clamp(1.45rem, 8.5vw, 2rem); }
@@ -584,14 +596,28 @@ footer p {
   .btn { width: 100%; text-align: center; }
   .list { min-height: 200px; max-height: 320px; }
 
-  /* Tables: bigger touch padding, smaller font, momentum scroll */
-  .table-wrap { -webkit-overflow-scrolling: touch; }
+  /* Tables: bigger touch padding, smaller font, momentum scroll,
+     and edge-fade scroll shadows so users feel the horizontal overflow */
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+    background:
+      linear-gradient(to right, #fff 30%, rgba(255,255,255,0)) 0 0 / 1.6rem 100% no-repeat,
+      linear-gradient(to left,  #fff 30%, rgba(255,255,255,0)) 100% 0 / 1.6rem 100% no-repeat,
+      radial-gradient(ellipse at left,  rgba(0,0,0,0.18), rgba(0,0,0,0) 70%) 0 0 / 1rem 100% no-repeat,
+      radial-gradient(ellipse at right, rgba(0,0,0,0.18), rgba(0,0,0,0) 70%) 100% 0 / 1rem 100% no-repeat,
+      #fff;
+    background-attachment: local, local, scroll, scroll, local;
+  }
   th, td { font-size: 0.74rem; padding: 0.55rem 0.4rem; }
   th { font-size: 0.6rem; }
 
   /* Item rows */
   .item, .item-pick { padding: 0.55rem 0.6rem; }
   .item button { min-height: 38px; font-size: 0.7rem; padding: 0.32rem 0.55rem; }
+
+  /* Panels: tighter padding, no transform/hover quirks */
+  .panel { padding: 0.85rem; }
+  .setup-step { padding: 0.85rem; }
 
   footer { padding-bottom: calc(1.2rem + var(--safe-bottom)); }
   main { padding-bottom: calc(2rem + var(--safe-bottom)); }

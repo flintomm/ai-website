@@ -25,7 +25,7 @@
 /* ─── Base Reset ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
-html { -webkit-tap-highlight-color: transparent; }
+html { -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
 
 body {
   font-family: var(--sans);
@@ -35,6 +35,7 @@ body {
   min-height: 100svh;
   min-height: 100dvh;
   overscroll-behavior-y: none;
+  overflow-x: hidden;
 }
 
 .bg-grid {
@@ -474,54 +475,103 @@ tr.row-new { animation: rowEnter 170ms ease-out forwards; }
 
 @media (max-width: 720px) {
   .site-nav { padding-left: calc(var(--mobile-pad) + var(--safe-left)); padding-right: calc(var(--mobile-pad) + var(--safe-right)); }
-  .tech-strip, .flow-strip { padding-left: var(--mobile-pad); padding-right: var(--mobile-pad); }
-  header, main { width: 97vw; }
+  .tech-strip { padding-left: var(--mobile-pad); padding-right: var(--mobile-pad); }
+  /* flow-strip is verbose noise on a phone — hide it */
+  .flow-strip { display: none; }
+
+  /* Use full viewport with safe-area padding instead of a 96vw clamp.
+     This prevents box-shadow offsets from clipping at the right edge
+     and keeps cards full-width with a consistent gutter. */
+  header, main {
+    width: auto;
+    margin: 0;
+    padding-left: calc(var(--mobile-pad) + var(--safe-left));
+    padding-right: calc(var(--mobile-pad) + var(--safe-right));
+  }
+  main { gap: 0.6rem; }
+
   .fields.two-col, .fields.three-col,
-  .stats.four, .stats.two { grid-template-columns: 1fr; }
+  .stats.two { grid-template-columns: 1fr; }
   .stats.four { grid-template-columns: repeat(2, 1fr); }
   .site-tag { letter-spacing: 0.16em; }
-  header { padding: 0.8rem 0 0.55rem; }
+  header { padding-top: 0.8rem; padding-bottom: 0.55rem; }
   h1 { font-size: clamp(1.35rem, 8vw, 1.9rem); }
   header > p { font-size: 0.68rem; line-height: 1.45; }
-  .card { padding: 0.55rem; box-shadow: 2px 2px 0 var(--accent-dim); }
+
+  /* Cards: drop offset shadows on mobile (caused subtle right-edge
+     overflow), bump padding so content breathes. */
+  .card { padding: 0.7rem; box-shadow: none; }
+  .card:hover { box-shadow: none; border-color: var(--line); }
+  .finale-card { box-shadow: none; }
+  .finale-card:hover { box-shadow: none; }
+
   .card-head { gap: 0.3rem; }
   .card-head h2 { font-size: 0.6rem; }
   .btn { width: 100%; justify-content: center; letter-spacing: 0.08em; }
-  .table-wrap.compact { max-height: 200px; }
-  .tech-strip span, .flow-strip span { letter-spacing: 0.06em; }
+  .table-wrap.compact { max-height: 220px; }
+  .tech-strip span { letter-spacing: 0.06em; }
 
   /* Bigger, easier-to-read tables on touch */
-  th, td { padding: 0.42rem 0.42rem; font-size: 0.7rem; }
+  th, td { padding: 0.45rem 0.42rem; font-size: 0.72rem; }
   th { font-size: 0.55rem; }
-  td input { padding: 0.3rem 0.36rem; font-size: 0.7rem; min-height: 36px; }
+  td input { padding: 0.32rem 0.36rem; font-size: 0.72rem; min-height: 36px; }
   .row-remove { padding: 0.32rem 0.5rem; font-size: 0.55rem; min-height: 36px; }
+
+  /* Scroll-shadow technique: subtle gradients on the left/right
+     edges that fade when the user has scrolled to that side, signaling
+     overflow. Layered backgrounds with mixed local/scroll attachments. */
+  .table-wrap {
+    -webkit-overflow-scrolling: touch;
+    background:
+      linear-gradient(to right, var(--surface) 30%, rgba(25,25,25,0)) 0 0 / 1.6rem 100% no-repeat,
+      linear-gradient(to left,  var(--surface) 30%, rgba(25,25,25,0)) 100% 0 / 1.6rem 100% no-repeat,
+      radial-gradient(ellipse at left,  rgba(0,0,0,0.55), rgba(0,0,0,0) 70%) 0 0 / 1rem 100% no-repeat,
+      radial-gradient(ellipse at right, rgba(0,0,0,0.55), rgba(0,0,0,0) 70%) 100% 0 / 1rem 100% no-repeat,
+      rgba(0,0,0,0.22);
+    background-attachment: local, local, scroll, scroll, local;
+  }
 
   /* Drag-grab / resize affordances are awkward on touch — hide */
   .resize-grip { display: none; }
   .card-head { cursor: default; }
 
-  /* Finale stat reads larger on phones */
-  #finale-value { font-size: clamp(2.4rem, 11vw, 3.2rem); }
-  .pill { font-size: 0.6rem; }
+  /* Finale: reads as the hero card */
+  .finale-card {
+    border-color: rgba(244,224,74,0.32);
+    border-width: 1.5px;
+    padding: 0.85rem;
+  }
+  .finale-label { font-size: 0.5rem; margin-bottom: 0.2rem; }
+  #finale-value { font-size: clamp(2.4rem, 11vw, 3rem); margin-bottom: 0.3rem; }
+  .pill { font-size: 0.6rem; padding: 0.22rem 0.6rem; margin: 0 0 0.55rem; }
+  .stats { gap: 0.4rem; }
+  .stat { padding: 0.45rem 0.55rem; }
+  .stat strong { font-size: 0.92rem; }
 
-  /* Sticky thead inside scrollable wrappers */
-  .table-wrap { -webkit-overflow-scrolling: touch; }
+  /* Tooltips on touch are noisy — disable */
+  .has-tooltip { cursor: default; }
+  .has-tooltip::after { display: none; }
 }
 
 @media (max-width: 480px) {
   .site-nav { padding-top: calc(0.5rem + var(--safe-top)); padding-bottom: 0.5rem; }
-  header { padding: 0.6rem 0 0.4rem; }
-  .card { padding: 0.5rem; }
+  header { padding-top: 0.6rem; padding-bottom: 0.4rem; }
+  main { gap: 0.5rem; }
+  .card { padding: 0.6rem; }
+  .finale-card { padding: 0.75rem; }
   .card-head { padding-bottom: 0.32rem; margin-bottom: 0.32rem; }
-  .tech-strip, .flow-strip { gap: 0.22rem; padding-top: 0.22rem; padding-bottom: 0.22rem; }
-  .tech-strip span, .flow-strip span { font-size: 0.46rem; padding: 0.08rem 0.28rem; }
+  .tech-strip { gap: 0.22rem; padding-top: 0.22rem; padding-bottom: 0.22rem; }
+  .tech-strip span { font-size: 0.5rem; padding: 0.1rem 0.32rem; letter-spacing: 0.05em; }
   h1 { font-size: clamp(1.2rem, 7.8vw, 1.6rem); margin-top: 0.05rem; }
-  header > p { font-size: 0.62rem; }
-  th, td { padding: 0.36rem 0.32rem; font-size: 0.66rem; }
-  .btn { padding: 0.42rem 0.5rem; font-size: 0.55rem; }
-  .stats.four { grid-template-columns: 1fr 1fr; gap: 0.3rem; }
-  .stat { padding: 0.32rem 0.42rem; }
-  .stat strong { font-size: 0.78rem; }
+  header > p { font-size: 0.66rem; line-height: 1.4; }
+  th, td { padding: 0.4rem 0.34rem; font-size: 0.68rem; }
+  .btn { padding: 0.5rem 0.55rem; font-size: 0.58rem; }
+  .stat { padding: 0.42rem 0.45rem; }
+  .stat strong { font-size: 0.84rem; }
+  .stat p { font-size: 0.46rem; }
+  #finale-value { font-size: clamp(2.2rem, 13vw, 2.7rem); }
+  .viz-canvas { height: 230px; }
+  .viz-legend { max-height: 88px; }
 }
 
 /* Bottom safe-area: leave room for the home indicator */
