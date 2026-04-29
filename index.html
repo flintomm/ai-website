@@ -263,8 +263,11 @@
       transform: translateZ(14px);
     }
 
-    /* Disable tilt on touch devices and reduced-motion */
-    @media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+    /* Reduced motion: kill the tilt entirely */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+      }
       main { perspective: none; }
       .feature {
         transform: none !important;
@@ -273,12 +276,6 @@
       }
       .feature-title,
       .feature-handle { transform: none; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        transition-duration: 0.01ms !important;
-      }
     }
   </style>
 </head>
@@ -319,35 +316,33 @@
   <script>
     (function () {
       var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var coarsePointer = window.matchMedia && (
-        window.matchMedia('(hover: none)').matches ||
-        window.matchMedia('(pointer: coarse)').matches
-      );
-      if (reduceMotion || coarsePointer) return;
+      if (reduceMotion) return;
 
       var feature = document.querySelector('.feature');
       if (!feature) return;
 
+      var hasFinePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
       var MAX = 6;        // max degrees of tilt
-      var LERP = 0.09;    // how snappy the follow is (higher = snappier)
-      var EPS = 0.01;     // stop drawing when nearly settled
+      var GYRO_MAX = 7;   // mobile can take a touch more
+      var LERP_DESKTOP = 0.09;
+      var LERP_GYRO = 0.14;
+      var GYRO_RANGE = 22; // degrees of phone tilt to reach max
+      var EPS = 0.01;
 
       var trx = 0, try_ = 0; // target rotations
       var rx = 0, ry = 0;    // current rotations
+      var lerp = LERP_DESKTOP;
       var inside = false;
       var raf = null;
 
-      function onPointer(e) {
-        var nx = (e.clientX / window.innerWidth) * 2 - 1;   // -1..1
-        var ny = (e.clientY / window.innerHeight) * 2 - 1;  // -1..1
-        // Soften by feature's relative position (less tilt when cursor is far from feature)
-        trx = -ny * MAX;
-        try_ = nx * MAX;
+      function setTarget(rxDeg, ryDeg) {
+        trx = rxDeg; try_ = ryDeg;
         inside = true;
         ensureRunning();
       }
 
-      function onLeave() {
+      function release() {
         trx = 0; try_ = 0;
         inside = false;
         ensureRunning();
@@ -358,10 +353,9 @@
       }
 
       function tick() {
-        rx += (trx - rx) * LERP;
-        ry += (try_ - ry) * LERP;
+        rx += (trx - rx) * lerp;
+        ry += (try_ - ry) * lerp;
         feature.style.transform = 'rotateX(' + rx.toFixed(3) + 'deg) rotateY(' + ry.toFixed(3) + 'deg)';
-
         var settled = !inside && Math.abs(rx) < EPS && Math.abs(ry) < EPS;
         if (settled) {
           feature.style.transform = '';
@@ -373,10 +367,64 @@
         raf = requestAnimationFrame(tick);
       }
 
-      document.addEventListener('mousemove', onPointer, { passive: true });
-      document.addEventListener('mouseleave', onLeave);
-      window.addEventListener('blur', onLeave);
-      document.addEventListener('visibilitychange', function () { if (document.hidden) onLeave(); });
+      // ----- Desktop: mouse-driven tilt -----
+      if (hasFinePointer) {
+        document.addEventListener('mousemove', function (e) {
+          var nx = (e.clientX / window.innerWidth) * 2 - 1;
+          var ny = (e.clientY / window.innerHeight) * 2 - 1;
+          lerp = LERP_DESKTOP;
+          setTarget(-ny * MAX, nx * MAX);
+        }, { passive: true });
+        document.addEventListener('mouseleave', release);
+        window.addEventListener('blur', release);
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden) release();
+        });
+      }
+
+      // ----- Mobile: gyroscope-driven tilt -----
+      // First reading is captured as the neutral "zero" so the card
+      // starts flat regardless of how the phone is held, then deltas
+      // drive the tilt within +/- GYRO_RANGE degrees.
+      var refBeta = null, refGamma = null;
+      function onOrient(e) {
+        if (e.beta == null && e.gamma == null) return;
+        var beta = e.beta || 0;
+        var gamma = e.gamma || 0;
+        if (refBeta == null) { refBeta = beta; refGamma = gamma; return; }
+        var dBeta = beta - refBeta;
+        var dGamma = gamma - refGamma;
+        var nx = Math.max(-1, Math.min(1, dGamma / GYRO_RANGE));
+        var ny = Math.max(-1, Math.min(1, dBeta / GYRO_RANGE));
+        lerp = LERP_GYRO;
+        setTarget(-ny * GYRO_MAX, nx * GYRO_MAX);
+      }
+
+      function attachOrient() {
+        window.addEventListener('deviceorientation', onOrient);
+      }
+
+      if (window.DeviceOrientationEvent && !hasFinePointer) {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          // iOS 13+: must be requested from a user-gesture handler. The first
+          // touch on the page kicks it off; a denial just leaves the page flat.
+          var requested = false;
+          var requestOnce = function () {
+            if (requested) return;
+            requested = true;
+            try {
+              DeviceOrientationEvent.requestPermission()
+                .then(function (state) { if (state === 'granted') attachOrient(); })
+                .catch(function () { /* denied or errored: stay flat */ });
+            } catch (_) { /* stay flat */ }
+          };
+          document.addEventListener('touchstart', requestOnce, { once: true, passive: true });
+          document.addEventListener('click', requestOnce, { once: true });
+        } else {
+          // Android/Chromium: no explicit permission required.
+          attachOrient();
+        }
+      }
     })();
   </script>
 
