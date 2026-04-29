@@ -382,48 +382,28 @@
         });
       }
 
-      // ----- Mobile: gyroscope-driven tilt -----
-      // First reading is captured as the neutral "zero" so the card
-      // starts flat regardless of how the phone is held, then deltas
-      // drive the tilt within +/- GYRO_RANGE degrees.
-      var refBeta = null, refGamma = null;
-      function onOrient(e) {
-        if (e.beta == null && e.gamma == null) return;
-        var beta = e.beta || 0;
-        var gamma = e.gamma || 0;
-        if (refBeta == null) { refBeta = beta; refGamma = gamma; return; }
-        var dBeta = beta - refBeta;
-        var dGamma = gamma - refGamma;
-        var nx = Math.max(-1, Math.min(1, dGamma / GYRO_RANGE));
-        var ny = Math.max(-1, Math.min(1, dBeta / GYRO_RANGE));
-        lerp = LERP_GYRO;
-        setTarget(-ny * GYRO_MAX, nx * GYRO_MAX);
-      }
+      // ----- Mobile: touch-driven tilt -----
+      // Finger position maps directly to card tilt — same math as the
+      // desktop pointer path. No permissions, works in every preview.
+      if (!hasFinePointer) {
+        document.addEventListener('touchmove', function (e) {
+          var t = e.touches[0]; if (!t) return;
+          var nx = (t.clientX / window.innerWidth) * 2 - 1;
+          var ny = (t.clientY / window.innerHeight) * 2 - 1;
+          lerp = LERP_GYRO;
+          setTarget(-ny * GYRO_MAX, nx * GYRO_MAX);
+        }, { passive: true });
 
-      function attachOrient() {
-        window.addEventListener('deviceorientation', onOrient);
-      }
+        document.addEventListener('touchstart', function (e) {
+          var t = e.touches[0]; if (!t) return;
+          var nx = (t.clientX / window.innerWidth) * 2 - 1;
+          var ny = (t.clientY / window.innerHeight) * 2 - 1;
+          lerp = LERP_GYRO;
+          setTarget(-ny * GYRO_MAX, nx * GYRO_MAX);
+        }, { passive: true });
 
-      if (window.DeviceOrientationEvent && !hasFinePointer) {
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-          // iOS 13+: must be requested from a user-gesture handler. The first
-          // touch on the page kicks it off; a denial just leaves the page flat.
-          var requested = false;
-          var requestOnce = function () {
-            if (requested) return;
-            requested = true;
-            try {
-              DeviceOrientationEvent.requestPermission()
-                .then(function (state) { if (state === 'granted') attachOrient(); })
-                .catch(function () { /* denied or errored: stay flat */ });
-            } catch (_) { /* stay flat */ }
-          };
-          document.addEventListener('touchstart', requestOnce, { once: true, passive: true });
-          document.addEventListener('click', requestOnce, { once: true });
-        } else {
-          // Android/Chromium: no explicit permission required.
-          attachOrient();
-        }
+        document.addEventListener('touchend', release, { passive: true });
+        document.addEventListener('touchcancel', release, { passive: true });
       }
     })();
   </script>
