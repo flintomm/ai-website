@@ -440,7 +440,7 @@
   </main>
 
   <footer class="footbar">
-    <span>v2.0 <span class="accent">●</span> Brutalist</span>
+    <span>v2.0 <span class="accent">●</span> Index</span>
     <span>© 2026 Tommy</span>
   </footer>
 
@@ -455,14 +455,19 @@
 
       var INK = '#000000';
       var ACCENT = '#1f8a4c';
-      var MAX_PARTICLES = 220;
-      var EMIT_PER_MOVE = 3;
-      var MIN_MOVE_DIST = 4;
+      var ACCENT_DIM = '#0f5c33';
+      var SPARK = '#ffffff';
+      var SIZES = [14, 12, 10, 8, 6, 4];
+      var GRID = 4;
+      var STEP_MS = 70;
+      var MAX_PARTICLES = 380;
+      var MIN_MOVE_DIST = 3;
 
       var dpr = Math.min(window.devicePixelRatio || 1, 2);
       var w = 0, h = 0;
       var particles = [];
-      var lastX = null, lastY = null;
+      var rings = [];
+      var lastX = null, lastY = null, lastT = 0;
       var running = true;
 
       function resize() {
@@ -475,91 +480,145 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
       resize();
-
       window.addEventListener('resize', resize, { passive: true });
       window.addEventListener('orientationchange', resize, { passive: true });
 
-      function emit(x, y, count) {
+      function pickColor() {
+        var r = Math.random();
+        if (r < 0.45) return ACCENT;
+        if (r < 0.65) return ACCENT_DIM;
+        if (r < 0.92) return INK;
+        return SPARK;
+      }
+
+      function snap(v) { return Math.round(v / GRID) * GRID; }
+
+      function emit(x, y, dirX, dirY, dragSpeed, now) {
+        var count = 4 + Math.min(10, (dragSpeed * 0.18) | 0);
+        var trailMag = Math.min(1, dragSpeed * 0.04);
         for (var i = 0; i < count; i++) {
           if (particles.length >= MAX_PARTICLES) particles.shift();
-          var angle = Math.random() * Math.PI * 2;
-          var speed = 0.4 + Math.random() * 1.6;
+          var spread = (Math.random() - 0.5) * 0.9;
+          var perpX = -dirY, perpY = dirX;
+          var fanX = Math.cos(spread) * (-dirX) + Math.sin(spread) * perpX;
+          var fanY = Math.cos(spread) * (-dirY) + Math.sin(spread) * perpY;
+          var speed = 1.2 + Math.random() * 2.4 + dragSpeed * 0.05;
+          var jitter = 14;
+          var px = snap(x + (Math.random() - 0.5) * jitter);
+          var py = snap(y + (Math.random() - 0.5) * jitter);
           particles.push({
-            x: x + (Math.random() - 0.5) * 6,
-            y: y + (Math.random() - 0.5) * 6,
-            vx: Math.cos(angle) * speed * 0.6,
-            vy: Math.sin(angle) * speed * 0.6 - 0.6,
-            size: 2 + Math.floor(Math.random() * 3),
-            life: 1,
-            decay: 0.012 + Math.random() * 0.014,
-            color: Math.random() < 0.55 ? ACCENT : INK
+            x: px,
+            y: py,
+            vx: fanX * speed * trailMag + (Math.random() - 0.5) * 0.6,
+            vy: fanY * speed * trailMag + (Math.random() - 0.5) * 0.6 - 0.4,
+            stepIdx: 0,
+            stepStart: now,
+            color: pickColor()
           });
         }
       }
 
-      function handleMove(x, y) {
-        if (lastX !== null) {
+      function pulse(x, y, now) {
+        rings.push({ x: snap(x), y: snap(y), born: now, life: 1 });
+      }
+
+      function handleMove(x, y, now) {
+        if (lastX !== null && lastT) {
           var dx = x - lastX, dy = y - lastY;
           var d = Math.sqrt(dx * dx + dy * dy);
           if (d < MIN_MOVE_DIST) return;
-          var steps = Math.min(6, Math.ceil(d / 18));
+          var dt = Math.max(8, now - lastT);
+          var dragSpeed = (d / dt) * 16; // ~px per ~16ms frame
+          var dirX = dx / d, dirY = dy / d;
+          var steps = Math.min(5, Math.ceil(d / 22));
           for (var i = 0; i < steps; i++) {
             var t = (i + 1) / steps;
-            emit(lastX + dx * t, lastY + dy * t, EMIT_PER_MOVE);
+            emit(lastX + dx * t, lastY + dy * t, dirX, dirY, dragSpeed, now);
           }
-        } else {
-          emit(x, y, EMIT_PER_MOVE);
         }
-        lastX = x;
-        lastY = y;
+        lastX = x; lastY = y; lastT = now;
       }
 
-      function reset() { lastX = null; lastY = null; }
+      function reset() { lastX = null; lastY = null; lastT = 0; }
 
       document.addEventListener('touchstart', function (e) {
-        var t = e.touches[0];
-        if (t) { lastX = t.clientX; lastY = t.clientY; emit(t.clientX, t.clientY, 5); }
+        var t = e.touches[0]; if (!t) return;
+        var now = performance.now();
+        lastX = t.clientX; lastY = t.clientY; lastT = now;
+        pulse(t.clientX, t.clientY, now);
       }, { passive: true });
 
       document.addEventListener('touchmove', function (e) {
+        var now = performance.now();
         for (var i = 0; i < e.touches.length; i++) {
-          handleMove(e.touches[i].clientX, e.touches[i].clientY);
+          handleMove(e.touches[i].clientX, e.touches[i].clientY, now);
         }
       }, { passive: true });
 
       document.addEventListener('touchend', reset, { passive: true });
       document.addEventListener('touchcancel', reset, { passive: true });
 
-      // Mouse fallback for desktop testing & pointer-fine devices
+      document.addEventListener('mousedown', function (e) {
+        if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
+        pulse(e.clientX, e.clientY, performance.now());
+      });
       document.addEventListener('mousemove', function (e) {
         if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
-        handleMove(e.clientX, e.clientY);
+        handleMove(e.clientX, e.clientY, performance.now());
       }, { passive: true });
       document.addEventListener('mouseleave', reset);
 
       document.addEventListener('visibilitychange', function () {
         running = !document.hidden;
-        if (running) tick();
+        if (running) requestAnimationFrame(tick);
       });
 
-      function tick() {
+      function tick(now) {
         if (!running) return;
         ctx.clearRect(0, 0, w, h);
+
+        // Rings (touch pulse)
+        var aliveRings = [];
+        for (var r = 0; r < rings.length; r++) {
+          var ring = rings[r];
+          var age = (now - ring.born) / 600;
+          if (age >= 1) continue;
+          var radius = 6 + age * 60;
+          var alpha = (1 - age) * 0.55;
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = ACCENT;
+          ctx.lineWidth = 1;
+          // Brutalist square ring instead of circle
+          ctx.strokeRect(
+            (ring.x - radius) | 0,
+            (ring.y - radius) | 0,
+            (radius * 2) | 0,
+            (radius * 2) | 0
+          );
+          aliveRings.push(ring);
+        }
+        rings = aliveRings;
+        ctx.globalAlpha = 1;
+
+        // Particles
         var alive = [];
         for (var i = 0; i < particles.length; i++) {
           var p = particles[i];
           p.x += p.vx;
           p.y += p.vy;
-          p.vy += 0.05;
-          p.vx *= 0.985;
-          p.life -= p.decay;
-          if (p.life <= 0) continue;
-          ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+          p.vy += 0.06;
+          p.vx *= 0.97;
+          p.vy *= 0.99;
+          if (now - p.stepStart >= STEP_MS) {
+            p.stepIdx++;
+            p.stepStart = now;
+          }
+          if (p.stepIdx >= SIZES.length) continue;
+          var size = SIZES[p.stepIdx];
           ctx.fillStyle = p.color;
-          ctx.fillRect(p.x | 0, p.y | 0, p.size, p.size);
+          ctx.fillRect(snap(p.x) | 0, snap(p.y) | 0, size, size);
           alive.push(p);
         }
-        ctx.globalAlpha = 1;
         particles = alive;
         requestAnimationFrame(tick);
       }
