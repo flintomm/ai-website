@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Tommy — Portfolio</title>
   <meta name="description" content="Tommy's portfolio. Dashboards and tools, built end-to-end." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,6 +22,10 @@
       --pad-x: clamp(1.25rem, 4vw, 3rem);
       --pad-y: clamp(1rem, 2.5vw, 1.4rem);
       --border: 1px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,16 +37,20 @@
       font-weight: 400;
       line-height: 1.35;
       -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
       min-height: 100vh;
       min-height: 100svh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
+      overscroll-behavior: none;
+      touch-action: manipulation;
     }
 
-    a { color: inherit; text-decoration: none; }
+    a { color: inherit; text-decoration: none; -webkit-touch-callout: none; }
     button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 
     /* ===== HEADER ===== */
@@ -47,9 +58,12 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: var(--pad-y) var(--pad-x);
+      padding: calc(var(--pad-y) + var(--safe-top)) calc(var(--pad-x) + var(--safe-right)) var(--pad-y) calc(var(--pad-x) + var(--safe-left));
       border-bottom: var(--border) solid var(--rule);
       flex-shrink: 0;
+      background: var(--bg);
+      position: relative;
+      z-index: 2;
     }
 
     .brand {
@@ -184,15 +198,26 @@
       transition: width 0.18s ease;
     }
 
-    .link-row:hover,
     .link-row:focus-visible {
       background: var(--ink);
       color: var(--bg);
       outline: none;
     }
-
-    .link-row:hover::before,
     .link-row:focus-visible::before { width: 0.4rem; }
+
+    @media (hover: hover) and (pointer: fine) {
+      .link-row:hover {
+        background: var(--ink);
+        color: var(--bg);
+      }
+      .link-row:hover::before { width: 0.4rem; }
+    }
+
+    .link-row:active {
+      background: var(--ink);
+      color: var(--bg);
+    }
+    .link-row:active::before { width: 0.4rem; }
 
     .link-index {
       font-size: 0.78rem;
@@ -201,8 +226,11 @@
       color: var(--mute);
     }
 
-    .link-row:hover .link-index,
-    .link-row:focus-visible .link-index { color: var(--accent); }
+    .link-row:focus-visible .link-index,
+    .link-row:active .link-index { color: var(--accent); }
+    @media (hover: hover) and (pointer: fine) {
+      .link-row:hover .link-index { color: var(--accent); }
+    }
 
     .link-body {
       display: flex;
@@ -227,8 +255,11 @@
       font-weight: 500;
     }
 
-    .link-row:hover .link-desc,
-    .link-row:focus-visible .link-desc { color: rgba(255, 255, 255, 0.7); }
+    .link-row:focus-visible .link-desc,
+    .link-row:active .link-desc { color: rgba(255, 255, 255, 0.7); }
+    @media (hover: hover) and (pointer: fine) {
+      .link-row:hover .link-desc { color: rgba(255, 255, 255, 0.7); }
+    }
 
     .link-arrow {
       font-size: 1.6rem;
@@ -237,10 +268,16 @@
       transition: transform 0.18s ease, color 0.18s ease;
     }
 
-    .link-row:hover .link-arrow,
-    .link-row:focus-visible .link-arrow {
+    .link-row:focus-visible .link-arrow,
+    .link-row:active .link-arrow {
       color: var(--accent);
       transform: translateX(0.4rem);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .link-row:hover .link-arrow {
+        color: var(--accent);
+        transform: translateX(0.4rem);
+      }
     }
 
     .link-tag {
@@ -254,15 +291,18 @@
       font-weight: 500;
     }
 
-    .link-row:hover .link-tag,
-    .link-row:focus-visible .link-tag { color: var(--accent); }
+    .link-row:focus-visible .link-tag,
+    .link-row:active .link-tag { color: var(--accent); }
+    @media (hover: hover) and (pointer: fine) {
+      .link-row:hover .link-tag { color: var(--accent); }
+    }
 
     /* ===== FOOTER ===== */
     .footbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: var(--pad-y) var(--pad-x);
+      padding: var(--pad-y) calc(var(--pad-x) + var(--safe-right)) calc(var(--pad-y) + var(--safe-bottom)) calc(var(--pad-x) + var(--safe-left));
       border-top: var(--border) solid var(--rule);
       font-size: 0.68rem;
       letter-spacing: 0.28em;
@@ -272,6 +312,9 @@
       flex-shrink: 0;
       gap: 1rem;
       flex-wrap: wrap;
+      background: var(--bg);
+      position: relative;
+      z-index: 2;
     }
 
     .footbar .accent { color: var(--accent); }
@@ -282,8 +325,8 @@
       .pane--intro {
         border-right: none;
         border-bottom: var(--border) solid var(--rule);
-        padding-top: clamp(2rem, 6vw, 3rem);
-        padding-bottom: clamp(2rem, 6vw, 3rem);
+        padding-top: clamp(1.75rem, 6vw, 3rem);
+        padding-bottom: clamp(1.75rem, 6vw, 3rem);
       }
       .link-row { padding-block: clamp(1.1rem, 4vw, 1.6rem); }
       .link-row { grid-template-columns: 3rem 1fr auto; }
@@ -292,21 +335,54 @@
 
     @media (max-width: 520px) {
       .topbar-meta { display: none; }
-      .meta-row { gap: 1.25rem; }
+      .meta-row { gap: 1.1rem; row-gap: 0.9rem; }
       .link-tag { display: none; }
-      .link-row { grid-template-columns: 2.4rem 1fr auto; gap: 0.9rem; }
-      .link-title { font-size: 1.25rem; }
-      .footbar { font-size: 0.6rem; letter-spacing: 0.2em; }
+      .link-row {
+        grid-template-columns: 2.2rem 1fr auto;
+        gap: 0.85rem;
+        min-height: 56px;
+      }
+      .link-title { font-size: 1.2rem; letter-spacing: -0.015em; }
+      .link-desc { font-size: 0.7rem; letter-spacing: 0.14em; }
+      .link-arrow { font-size: 1.35rem; }
+      .footbar { font-size: 0.58rem; letter-spacing: 0.2em; }
+      .display { letter-spacing: -0.025em; }
+    }
+
+    @media (max-width: 380px) {
+      .topbar { padding-top: calc(0.85rem + var(--safe-top)); padding-bottom: 0.85rem; }
+      .display { font-size: 2.4rem; }
+      .lede { font-size: 0.95rem; }
+      .eyebrow { margin-bottom: 1.1rem; }
+      .meta-row { font-size: 0.62rem; letter-spacing: 0.18em; }
+      .pane { padding-block: 1.4rem; }
+    }
+
+    /* iOS Safari: kill default tap halo on links */
+    a, button { -webkit-tap-highlight-color: transparent; }
+
+    /* Trail canvas overlay */
+    #pixel-trail {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
     }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         transition-duration: 0.01ms !important;
       }
+      #pixel-trail { display: none; }
     }
   </style>
 </head>
 <body>
+
+  <canvas id="pixel-trail" aria-hidden="true"></canvas>
 
   <header class="topbar">
     <span class="brand">Tommy<span class="brand-dot" aria-hidden="true"></span></span>
@@ -367,6 +443,129 @@
     <span>v2.0 <span class="accent">●</span> Brutalist</span>
     <span>© 2026 Tommy</span>
   </footer>
+
+  <script>
+    (function () {
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduce) return;
+
+      var canvas = document.getElementById('pixel-trail');
+      if (!canvas || !canvas.getContext) return;
+      var ctx = canvas.getContext('2d');
+
+      var INK = '#000000';
+      var ACCENT = '#1f8a4c';
+      var MAX_PARTICLES = 220;
+      var EMIT_PER_MOVE = 3;
+      var MIN_MOVE_DIST = 4;
+
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var w = 0, h = 0;
+      var particles = [];
+      var lastX = null, lastY = null;
+      var running = true;
+
+      function resize() {
+        w = window.innerWidth;
+        h = window.innerHeight;
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      resize();
+
+      window.addEventListener('resize', resize, { passive: true });
+      window.addEventListener('orientationchange', resize, { passive: true });
+
+      function emit(x, y, count) {
+        for (var i = 0; i < count; i++) {
+          if (particles.length >= MAX_PARTICLES) particles.shift();
+          var angle = Math.random() * Math.PI * 2;
+          var speed = 0.4 + Math.random() * 1.6;
+          particles.push({
+            x: x + (Math.random() - 0.5) * 6,
+            y: y + (Math.random() - 0.5) * 6,
+            vx: Math.cos(angle) * speed * 0.6,
+            vy: Math.sin(angle) * speed * 0.6 - 0.6,
+            size: 2 + Math.floor(Math.random() * 3),
+            life: 1,
+            decay: 0.012 + Math.random() * 0.014,
+            color: Math.random() < 0.55 ? ACCENT : INK
+          });
+        }
+      }
+
+      function handleMove(x, y) {
+        if (lastX !== null) {
+          var dx = x - lastX, dy = y - lastY;
+          var d = Math.sqrt(dx * dx + dy * dy);
+          if (d < MIN_MOVE_DIST) return;
+          var steps = Math.min(6, Math.ceil(d / 18));
+          for (var i = 0; i < steps; i++) {
+            var t = (i + 1) / steps;
+            emit(lastX + dx * t, lastY + dy * t, EMIT_PER_MOVE);
+          }
+        } else {
+          emit(x, y, EMIT_PER_MOVE);
+        }
+        lastX = x;
+        lastY = y;
+      }
+
+      function reset() { lastX = null; lastY = null; }
+
+      document.addEventListener('touchstart', function (e) {
+        var t = e.touches[0];
+        if (t) { lastX = t.clientX; lastY = t.clientY; emit(t.clientX, t.clientY, 5); }
+      }, { passive: true });
+
+      document.addEventListener('touchmove', function (e) {
+        for (var i = 0; i < e.touches.length; i++) {
+          handleMove(e.touches[i].clientX, e.touches[i].clientY);
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchend', reset, { passive: true });
+      document.addEventListener('touchcancel', reset, { passive: true });
+
+      // Mouse fallback for desktop testing & pointer-fine devices
+      document.addEventListener('mousemove', function (e) {
+        if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
+        handleMove(e.clientX, e.clientY);
+      }, { passive: true });
+      document.addEventListener('mouseleave', reset);
+
+      document.addEventListener('visibilitychange', function () {
+        running = !document.hidden;
+        if (running) tick();
+      });
+
+      function tick() {
+        if (!running) return;
+        ctx.clearRect(0, 0, w, h);
+        var alive = [];
+        for (var i = 0; i < particles.length; i++) {
+          var p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.05;
+          p.vx *= 0.985;
+          p.life -= p.decay;
+          if (p.life <= 0) continue;
+          ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x | 0, p.y | 0, p.size, p.size);
+          alive.push(p);
+        }
+        ctx.globalAlpha = 1;
+        particles = alive;
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    })();
+  </script>
 
 </body>
 </html>
