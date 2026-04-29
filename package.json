@@ -1,7 +1,7 @@
 {
   "name": "ai-website",
   "version": "2.0.0",
-  "description": "Tommy Phetsavath portfolio — brutalist v2",
+  "description": "Tommy's portfolio — brutalist v2",
   "main": "server.mjs",
   "type": "module",
   "scripts": {
