@@ -93,145 +93,207 @@
     /* ===== MAIN ===== */
     main {
       flex: 1 1 auto;
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(220px, 26vw, 340px);
       min-height: 0;
     }
 
-    .pane--links {
-      flex: 1 1 auto;
-      padding: 0;
+    /* ===== FEATURE (LinkedIn) ===== */
+    .feature {
+      position: relative;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
+      gap: clamp(1.5rem, 4vw, 3rem);
+      padding: clamp(1.75rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem);
+      border-right: var(--border) solid var(--rule);
+      color: var(--ink);
+      text-decoration: none;
+      transition: background 0.18s ease, color 0.18s ease;
+      overflow: hidden;
       min-width: 0;
     }
 
-    .link-list { display: flex; flex-direction: column; height: 100%; }
-
-    .link-row {
-      flex: 1 1 0;
-      display: grid;
-      grid-template-columns: 4.5rem 1fr auto;
-      align-items: center;
-      gap: clamp(1rem, 2.5vw, 2rem);
-      padding: clamp(1.25rem, 3vw, 2rem) var(--pad-x);
-      border-bottom: var(--border) solid var(--rule);
-      color: var(--ink);
-      transition: background 0.12s ease, color 0.12s ease;
-      position: relative;
-      min-height: 0;
-    }
-
-    .link-row:last-child { border-bottom: none; }
-
-    .link-row::before {
+    .feature::before {
       content: "";
       position: absolute;
+      left: 0;
       top: 0;
       bottom: 0;
-      left: 0;
+      width: 0;
+      background: var(--accent);
+      transition: width 0.22s ease;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .feature:hover { background: var(--ink); color: var(--bg); }
+      .feature:hover::before { width: 0.55rem; }
+    }
+    .feature:active,
+    .feature:focus-visible { background: var(--ink); color: var(--bg); outline: none; }
+    .feature:active::before,
+    .feature:focus-visible::before { width: 0.55rem; }
+
+    .feature-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: var(--mute);
+    }
+    .feature-eyebrow .accent { color: var(--accent); margin-right: 0.4em; }
+
+    .feature-title {
+      font-size: clamp(3.5rem, 14vw, 12rem);
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      line-height: 0.85;
+      text-transform: uppercase;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.18em;
+      flex-wrap: wrap;
+    }
+
+    .feature-title .feature-arrow {
+      display: inline-block;
+      font-size: 0.6em;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: 0;
+      transform: translateY(0.05em);
+      transition: transform 0.22s ease, color 0.22s ease;
+      color: var(--accent);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .feature:hover .feature-arrow { transform: translate(0.3em, -0.2em); color: var(--accent); }
+    }
+    .feature:active .feature-arrow,
+    .feature:focus-visible .feature-arrow { transform: translate(0.3em, -0.2em); color: var(--accent); }
+
+    .feature-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .feature-handle {
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .feature-cta {
+      font-size: 0.7rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ===== SIDE (Side Projects) ===== */
+    .side {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--bg);
+    }
+
+    .side-label {
+      padding: 0.9rem clamp(1rem, 2vw, 1.4rem);
+      font-size: 0.6rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--mute);
+      font-weight: 500;
+      border-bottom: var(--border) solid var(--rule);
+    }
+    .side-label .accent { color: var(--accent); margin-right: 0.4em; }
+
+    .side-link {
+      flex: 1 1 0;
+      position: relative;
+      display: grid;
+      grid-template-columns: 2rem 1fr auto;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.9rem clamp(1rem, 2vw, 1.4rem);
+      border-bottom: var(--border) solid var(--rule);
+      color: var(--ink);
+      text-decoration: none;
+      min-height: 0;
+      transition: background 0.14s ease, color 0.14s ease;
+    }
+    .side-link:last-child { border-bottom: none; }
+
+    .side-link::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
       width: 0;
       background: var(--accent);
       transition: width 0.18s ease;
     }
 
-    .link-row:focus-visible {
-      background: var(--ink);
-      color: var(--bg);
-      outline: none;
-    }
-    .link-row:focus-visible::before { width: 0.4rem; }
-
     @media (hover: hover) and (pointer: fine) {
-      .link-row:hover {
-        background: var(--ink);
-        color: var(--bg);
-      }
-      .link-row:hover::before { width: 0.4rem; }
+      .side-link:hover { background: var(--ink); color: var(--bg); }
+      .side-link:hover::before { width: 0.3rem; }
     }
+    .side-link:active,
+    .side-link:focus-visible { background: var(--ink); color: var(--bg); outline: none; }
+    .side-link:active::before,
+    .side-link:focus-visible::before { width: 0.3rem; }
 
-    .link-row:active {
-      background: var(--ink);
-      color: var(--bg);
-    }
-    .link-row:active::before { width: 0.4rem; }
-
-    .link-index {
-      font-size: 0.78rem;
+    .side-num {
+      font-size: 0.65rem;
       letter-spacing: 0.18em;
       font-weight: 500;
       color: var(--mute);
     }
-
-    .link-row:focus-visible .link-index,
-    .link-row:active .link-index { color: var(--accent); }
     @media (hover: hover) and (pointer: fine) {
-      .link-row:hover .link-index { color: var(--accent); }
+      .side-link:hover .side-num { color: var(--accent); }
     }
+    .side-link:active .side-num,
+    .side-link:focus-visible .side-num { color: var(--accent); }
 
-    .link-body {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      min-width: 0;
-    }
+    .side-body { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
 
-    .link-title {
-      font-size: clamp(1.4rem, 2.6vw, 2rem);
+    .side-name {
+      font-size: 0.95rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.005em;
       text-transform: uppercase;
-      line-height: 1;
+      line-height: 1.05;
     }
 
-    .link-desc {
-      font-size: 0.78rem;
-      letter-spacing: 0.18em;
+    .side-desc {
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       color: var(--mute);
       font-weight: 500;
     }
-
-    .link-row:focus-visible .link-desc,
-    .link-row:active .link-desc { color: rgba(255, 255, 255, 0.7); }
     @media (hover: hover) and (pointer: fine) {
-      .link-row:hover .link-desc { color: rgba(255, 255, 255, 0.7); }
+      .side-link:hover .side-desc { color: rgba(255, 255, 255, 0.65); }
     }
+    .side-link:active .side-desc,
+    .side-link:focus-visible .side-desc { color: rgba(255, 255, 255, 0.65); }
 
-    .link-arrow {
-      font-size: 1.6rem;
+    .side-arrow {
+      font-size: 0.95rem;
       font-weight: 700;
       line-height: 1;
       transition: transform 0.18s ease, color 0.18s ease;
     }
-
-    .link-row:focus-visible .link-arrow,
-    .link-row:active .link-arrow {
-      color: var(--accent);
-      transform: translateX(0.4rem);
-    }
     @media (hover: hover) and (pointer: fine) {
-      .link-row:hover .link-arrow {
-        color: var(--accent);
-        transform: translateX(0.4rem);
-      }
+      .side-link:hover .side-arrow { color: var(--accent); transform: translateX(0.25rem); }
     }
-
-    .link-tag {
-      position: absolute;
-      top: 0.9rem;
-      right: var(--pad-x);
-      font-size: 0.62rem;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: var(--mute);
-      font-weight: 500;
-    }
-
-    .link-row:focus-visible .link-tag,
-    .link-row:active .link-tag { color: var(--accent); }
-    @media (hover: hover) and (pointer: fine) {
-      .link-row:hover .link-tag { color: var(--accent); }
-    }
+    .side-link:active .side-arrow,
+    .side-link:focus-visible .side-arrow { color: var(--accent); transform: translateX(0.25rem); }
 
     /* ===== FOOTER ===== */
     .footbar {
@@ -257,26 +319,33 @@
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 880px) {
-      .link-row { padding-block: clamp(1.1rem, 4vw, 1.6rem); }
-      .link-row { grid-template-columns: 3rem 1fr auto; }
+      main {
+        grid-template-columns: 1fr;
+      }
+      .feature {
+        border-right: none;
+        border-bottom: var(--border) solid var(--rule);
+        min-height: 58vh;
+      }
     }
 
     @media (max-width: 520px) {
       .topbar-meta { display: none; }
-      .link-tag { display: none; }
-      .link-row {
-        grid-template-columns: 2.2rem 1fr auto;
-        gap: 0.85rem;
-        min-height: 56px;
-      }
-      .link-title { font-size: 1.2rem; letter-spacing: -0.015em; }
-      .link-desc { font-size: 0.7rem; letter-spacing: 0.14em; }
-      .link-arrow { font-size: 1.35rem; }
+      .feature { padding: 1.4rem 1.25rem; gap: 1.25rem; min-height: 54vh; }
+      .feature-title { font-size: clamp(3rem, 18vw, 5.5rem); letter-spacing: -0.04em; }
+      .feature-eyebrow { font-size: 0.62rem; letter-spacing: 0.26em; }
+      .feature-handle { font-size: 0.78rem; letter-spacing: 0.16em; }
+      .feature-cta { font-size: 0.62rem; letter-spacing: 0.26em; }
+      .side-label { font-size: 0.55rem; padding: 0.7rem 1rem; }
+      .side-link { padding: 0.75rem 1rem; min-height: 56px; grid-template-columns: 1.6rem 1fr auto; gap: 0.6rem; }
+      .side-name { font-size: 0.88rem; }
+      .side-desc { font-size: 0.58rem; letter-spacing: 0.14em; }
       .footbar { font-size: 0.58rem; letter-spacing: 0.2em; }
     }
 
     @media (max-width: 380px) {
       .topbar { padding-top: calc(0.85rem + var(--safe-top)); padding-bottom: 0.85rem; }
+      .feature-title { font-size: 2.8rem; }
     }
 
     /* iOS Safari: kill default tap halo on links */
@@ -341,39 +410,34 @@
   </header>
 
   <main>
-    <section class="pane pane--links" aria-label="Destinations">
-      <nav class="link-list">
-        <a class="link-row" href="pages/dashboards/roster-architect/roster-architect.html">
-          <span class="link-tag">Dashboard</span>
-          <span class="link-index">01</span>
-          <span class="link-body">
-            <span class="link-title">Roster Architect</span>
-            <span class="link-desc">NBA simulator · cap engine</span>
-          </span>
-          <span class="link-arrow" aria-hidden="true">→</span>
-        </a>
+    <a class="feature" href="https://www.linkedin.com/in/tphet" target="_blank" rel="noopener noreferrer">
+      <span class="feature-eyebrow"><span class="accent">●</span>01 / Connect</span>
+      <h2 class="feature-title">LinkedIn<span class="feature-arrow" aria-hidden="true">↗</span></h2>
+      <div class="feature-foot">
+        <span class="feature-handle">in / tphet</span>
+        <span class="feature-cta">Open Profile</span>
+      </div>
+    </a>
 
-        <a class="link-row" href="pages/dashboards/budget-calculator/budget-calculator.html">
-          <span class="link-tag">Dashboard</span>
-          <span class="link-index">02</span>
-          <span class="link-body">
-            <span class="link-title">Budget Calculator</span>
-            <span class="link-desc">Planned vs actual · live charts</span>
-          </span>
-          <span class="link-arrow" aria-hidden="true">→</span>
-        </a>
-
-        <a class="link-row" href="https://www.linkedin.com/in/tphet" target="_blank" rel="noopener noreferrer">
-          <span class="link-tag">External</span>
-          <span class="link-index">03</span>
-          <span class="link-body">
-            <span class="link-title">LinkedIn</span>
-            <span class="link-desc">in / tphet</span>
-          </span>
-          <span class="link-arrow" aria-hidden="true">↗</span>
-        </a>
-      </nav>
-    </section>
+    <aside class="side" aria-label="Side projects">
+      <p class="side-label"><span class="accent">●</span>Side Projects</p>
+      <a class="side-link" href="pages/dashboards/roster-architect/roster-architect.html">
+        <span class="side-num">01</span>
+        <span class="side-body">
+          <span class="side-name">Roster Architect</span>
+          <span class="side-desc">NBA simulator · cap engine</span>
+        </span>
+        <span class="side-arrow" aria-hidden="true">→</span>
+      </a>
+      <a class="side-link" href="pages/dashboards/budget-calculator/budget-calculator.html">
+        <span class="side-num">02</span>
+        <span class="side-body">
+          <span class="side-name">Budget Calculator</span>
+          <span class="side-desc">Planned vs actual · charts</span>
+        </span>
+        <span class="side-arrow" aria-hidden="true">→</span>
+      </a>
+    </aside>
   </main>
 
   <footer class="footbar">
