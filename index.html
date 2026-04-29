@@ -93,81 +93,17 @@
     /* ===== MAIN ===== */
     main {
       flex: 1 1 auto;
-      display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      display: flex;
       min-height: 0;
     }
 
-    .pane {
-      padding: clamp(1.75rem, 4.5vw, 3.5rem) var(--pad-x);
+    .pane--links {
+      flex: 1 1 auto;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       min-width: 0;
     }
-
-    .pane--intro { border-right: var(--border) solid var(--rule); }
-
-    .eyebrow {
-      font-size: 0.7rem;
-      letter-spacing: 0.32em;
-      text-transform: uppercase;
-      color: var(--mute);
-      font-weight: 500;
-      margin-bottom: 1.6rem;
-    }
-
-    .eyebrow .accent { color: var(--accent); }
-
-    .display {
-      font-weight: 700;
-      font-size: clamp(2.6rem, 7.5vw, 6.25rem);
-      line-height: 0.92;
-      letter-spacing: -0.035em;
-      text-transform: uppercase;
-      margin-bottom: 1.4rem;
-    }
-
-    .display .stop { color: var(--accent); }
-
-    .lede {
-      max-width: 28ch;
-      font-size: clamp(1rem, 1.4vw, 1.15rem);
-      font-weight: 400;
-      color: var(--ink);
-      margin-bottom: 1.6rem;
-    }
-
-    .lede strong { font-weight: 700; }
-
-    .rule {
-      width: 3.5rem;
-      height: var(--border);
-      background: var(--ink);
-      margin: 0.4rem 0 1.4rem;
-    }
-
-    .meta-row {
-      display: flex;
-      gap: 2rem;
-      flex-wrap: wrap;
-      font-size: 0.7rem;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: var(--mute);
-      font-weight: 500;
-    }
-
-    .meta-row span strong {
-      display: block;
-      color: var(--ink);
-      letter-spacing: 0.18em;
-      margin-top: 0.35rem;
-      font-weight: 700;
-    }
-
-    /* ===== LINKS PANE ===== */
-    .pane--links { padding: 0; }
 
     .link-list { display: flex; flex-direction: column; height: 100%; }
 
@@ -321,21 +257,12 @@
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 880px) {
-      main { grid-template-columns: 1fr; }
-      .pane--intro {
-        border-right: none;
-        border-bottom: var(--border) solid var(--rule);
-        padding-top: clamp(1.75rem, 6vw, 3rem);
-        padding-bottom: clamp(1.75rem, 6vw, 3rem);
-      }
       .link-row { padding-block: clamp(1.1rem, 4vw, 1.6rem); }
       .link-row { grid-template-columns: 3rem 1fr auto; }
-      .lede { max-width: none; }
     }
 
     @media (max-width: 520px) {
       .topbar-meta { display: none; }
-      .meta-row { gap: 1.1rem; row-gap: 0.9rem; }
       .link-tag { display: none; }
       .link-row {
         grid-template-columns: 2.2rem 1fr auto;
@@ -346,43 +273,67 @@
       .link-desc { font-size: 0.7rem; letter-spacing: 0.14em; }
       .link-arrow { font-size: 1.35rem; }
       .footbar { font-size: 0.58rem; letter-spacing: 0.2em; }
-      .display { letter-spacing: -0.025em; }
     }
 
     @media (max-width: 380px) {
       .topbar { padding-top: calc(0.85rem + var(--safe-top)); padding-bottom: 0.85rem; }
-      .display { font-size: 2.4rem; }
-      .lede { font-size: 0.95rem; }
-      .eyebrow { margin-bottom: 1.1rem; }
-      .meta-row { font-size: 0.62rem; letter-spacing: 0.18em; }
-      .pane { padding-block: 1.4rem; }
     }
 
     /* iOS Safari: kill default tap halo on links */
     a, button { -webkit-tap-highlight-color: transparent; }
 
-    /* Trail canvas overlay */
-    #pixel-trail {
+    /* ===== LENS (pixel-lift effect) ===== */
+    #lens, .lens-chip {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
       pointer-events: none;
       z-index: 50;
+      backdrop-filter: invert(1) contrast(1.05);
+      -webkit-backdrop-filter: invert(1) contrast(1.05);
+      transform: translate3d(-9999px, -9999px, 0);
+      will-change: transform;
+    }
+
+    #lens {
+      width: 72px;
+      height: 72px;
+      border: 1px solid var(--ink);
+      box-shadow: 4px 4px 0 0 rgba(0,0,0,0.18), 0 0 0 1px var(--accent) inset;
+      opacity: 0;
+      transition: opacity 160ms ease;
+    }
+
+    #lens.is-active { opacity: 1; }
+
+    .lens-chip {
+      border: 1px solid rgba(0,0,0,0.55);
+    }
+
+    /* No backdrop-filter support → degrade to a clean ink-square cursor + no trail */
+    @supports not ((backdrop-filter: invert(1)) or (-webkit-backdrop-filter: invert(1))) {
+      #lens {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: var(--ink);
+        mix-blend-mode: difference;
+      }
+      .lens-chip { display: none; }
+    }
+
+    @media (max-width: 520px) {
+      #lens { width: 56px; height: 56px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         transition-duration: 0.01ms !important;
       }
-      #pixel-trail { display: none; }
+      #lens, .lens-chip { display: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <canvas id="pixel-trail" aria-hidden="true"></canvas>
+  <div id="lens" aria-hidden="true"></div>
 
   <header class="topbar">
     <span class="brand">Tommy<span class="brand-dot" aria-hidden="true"></span></span>
@@ -390,20 +341,6 @@
   </header>
 
   <main>
-    <section class="pane pane--intro">
-      <p class="eyebrow"><span class="accent">●</span>&nbsp;&nbsp;Index / 2026</p>
-      <h1 class="display">Tommy<span class="stop">.</span></h1>
-      <div class="rule" aria-hidden="true"></div>
-      <p class="lede">
-        <strong>I design, automate, and build</strong> tools people use.
-      </p>
-      <div class="meta-row">
-        <span>Role<strong>Builder</strong></span>
-        <span>Stack<strong>Vanilla / JS</strong></span>
-        <span>Status<strong>Open</strong></span>
-      </div>
-    </section>
-
     <section class="pane pane--links" aria-label="Destinations">
       <nav class="link-list">
         <a class="link-row" href="pages/dashboards/roster-architect/roster-architect.html">
@@ -446,180 +383,140 @@
 
   <script>
     (function () {
-      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduce) return;
+      var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduceMotion) return;
 
-      var canvas = document.getElementById('pixel-trail');
-      if (!canvas || !canvas.getContext) return;
-      var ctx = canvas.getContext('2d');
+      var lens = document.getElementById('lens');
+      if (!lens) return;
 
-      var INK = '#000000';
-      var ACCENT = '#1f8a4c';
-      var ACCENT_DIM = '#0f5c33';
-      var SPARK = '#ffffff';
-      var SIZES = [14, 12, 10, 8, 6, 4];
+      var lensSize = function () { return parseFloat(getComputedStyle(lens).width) || 72; };
+
+      var rect = { half: lensSize() / 2 };
       var GRID = 4;
-      var STEP_MS = 70;
-      var MAX_PARTICLES = 380;
-      var MIN_MOVE_DIST = 3;
+      var FOLLOW = 0.22;          // lerp factor (higher = snappier)
+      var DROP_DIST = 26;         // min px between trail chip drops
+      var MAX_CHIPS = 8;
+      var CHIP_SIZES = [56, 40, 24, 14, 8]; // step-down sequence
+      var CHIP_STEP_MS = 60;       // ms between size steps
+      var IDLE_HIDE_MS = 250;      // hide lens this long after pointer leaves
 
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      var w = 0, h = 0;
-      var particles = [];
-      var rings = [];
-      var lastX = null, lastY = null, lastT = 0;
-      var running = true;
-
-      function resize() {
-        w = window.innerWidth;
-        h = window.innerHeight;
-        canvas.width = Math.floor(w * dpr);
-        canvas.height = Math.floor(h * dpr);
-        canvas.style.width = w + 'px';
-        canvas.style.height = h + 'px';
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-      resize();
-      window.addEventListener('resize', resize, { passive: true });
-      window.addEventListener('orientationchange', resize, { passive: true });
-
-      function pickColor() {
-        var r = Math.random();
-        if (r < 0.45) return ACCENT;
-        if (r < 0.65) return ACCENT_DIM;
-        if (r < 0.92) return INK;
-        return SPARK;
-      }
+      var x = 0, y = 0, tx = 0, ty = 0;
+      var primed = false;          // have we received any input yet?
+      var active = false;
+      var hideTimer = null;
+      var lastDropX = -9999, lastDropY = -9999;
+      var chips = [];
+      var lastPointerType = 'mouse';
 
       function snap(v) { return Math.round(v / GRID) * GRID; }
 
-      function emit(x, y, dirX, dirY, dragSpeed, now) {
-        var count = 4 + Math.min(10, (dragSpeed * 0.18) | 0);
-        var trailMag = Math.min(1, dragSpeed * 0.04);
-        for (var i = 0; i < count; i++) {
-          if (particles.length >= MAX_PARTICLES) particles.shift();
-          var spread = (Math.random() - 0.5) * 0.9;
-          var perpX = -dirY, perpY = dirX;
-          var fanX = Math.cos(spread) * (-dirX) + Math.sin(spread) * perpX;
-          var fanY = Math.cos(spread) * (-dirY) + Math.sin(spread) * perpY;
-          var speed = 1.2 + Math.random() * 2.4 + dragSpeed * 0.05;
-          var jitter = 14;
-          var px = snap(x + (Math.random() - 0.5) * jitter);
-          var py = snap(y + (Math.random() - 0.5) * jitter);
-          particles.push({
-            x: px,
-            y: py,
-            vx: fanX * speed * trailMag + (Math.random() - 0.5) * 0.6,
-            vy: fanY * speed * trailMag + (Math.random() - 0.5) * 0.6 - 0.4,
-            stepIdx: 0,
-            stepStart: now,
-            color: pickColor()
-          });
-        }
+      function setActive(on) {
+        if (active === on) return;
+        active = on;
+        lens.classList.toggle('is-active', on);
       }
 
-      function pulse(x, y, now) {
-        rings.push({ x: snap(x), y: snap(y), born: now, life: 1 });
+      function scheduleHide() {
+        if (hideTimer) clearTimeout(hideTimer);
+        hideTimer = setTimeout(function () { setActive(false); }, IDLE_HIDE_MS);
       }
 
-      function handleMove(x, y, now) {
-        if (lastX !== null && lastT) {
-          var dx = x - lastX, dy = y - lastY;
-          var d = Math.sqrt(dx * dx + dy * dy);
-          if (d < MIN_MOVE_DIST) return;
-          var dt = Math.max(8, now - lastT);
-          var dragSpeed = (d / dt) * 16; // ~px per ~16ms frame
-          var dirX = dx / d, dirY = dy / d;
-          var steps = Math.min(5, Math.ceil(d / 22));
-          for (var i = 0; i < steps; i++) {
-            var t = (i + 1) / steps;
-            emit(lastX + dx * t, lastY + dy * t, dirX, dirY, dragSpeed, now);
-          }
-        }
-        lastX = x; lastY = y; lastT = now;
+      function point(px, py) {
+        tx = px; ty = py;
+        if (!primed) { x = tx; y = ty; primed = true; }
+        setActive(true);
+        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
       }
 
-      function reset() { lastX = null; lastY = null; lastT = 0; }
+      function release() {
+        scheduleHide();
+      }
 
-      document.addEventListener('touchstart', function (e) {
-        var t = e.touches[0]; if (!t) return;
-        var now = performance.now();
-        lastX = t.clientX; lastY = t.clientY; lastT = now;
-        pulse(t.clientX, t.clientY, now);
-      }, { passive: true });
-
-      document.addEventListener('touchmove', function (e) {
-        var now = performance.now();
-        for (var i = 0; i < e.touches.length; i++) {
-          handleMove(e.touches[i].clientX, e.touches[i].clientY, now);
+      function dropChip(px, py) {
+        if (chips.length >= MAX_CHIPS) {
+          var old = chips.shift();
+          if (old.timers) old.timers.forEach(clearTimeout);
+          if (old.el && old.el.parentNode) old.el.parentNode.removeChild(old.el);
         }
-      }, { passive: true });
+        var startSize = CHIP_SIZES[0];
+        var el = document.createElement('div');
+        el.className = 'lens-chip';
+        el.style.width = startSize + 'px';
+        el.style.height = startSize + 'px';
+        el.style.transform = 'translate3d(' + (snap(px) - startSize / 2) + 'px,' + (snap(py) - startSize / 2) + 'px,0)';
+        document.body.appendChild(el);
 
-      document.addEventListener('touchend', reset, { passive: true });
-      document.addEventListener('touchcancel', reset, { passive: true });
+        var timers = [];
+        for (var i = 1; i < CHIP_SIZES.length; i++) {
+          (function (size, idx) {
+            timers.push(setTimeout(function () {
+              if (!el.parentNode) return;
+              el.style.width = size + 'px';
+              el.style.height = size + 'px';
+              el.style.transform = 'translate3d(' + (snap(px) - size / 2) + 'px,' + (snap(py) - size / 2) + 'px,0)';
+            }, idx * CHIP_STEP_MS));
+          })(CHIP_SIZES[i], i);
+        }
+        timers.push(setTimeout(function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+          var ix = chips.indexOf(record);
+          if (ix >= 0) chips.splice(ix, 1);
+        }, CHIP_SIZES.length * CHIP_STEP_MS));
 
-      document.addEventListener('mousedown', function (e) {
-        if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
-        pulse(e.clientX, e.clientY, performance.now());
-      });
-      document.addEventListener('mousemove', function (e) {
-        if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
-        handleMove(e.clientX, e.clientY, performance.now());
-      }, { passive: true });
-      document.addEventListener('mouseleave', reset);
+        var record = { el: el, timers: timers };
+        chips.push(record);
+      }
+
+      // ---- Pointer wiring ----
+      // Use Pointer Events when available; fall back to mouse + touch.
+      if (window.PointerEvent) {
+        document.addEventListener('pointermove', function (e) {
+          lastPointerType = e.pointerType || 'mouse';
+          point(e.clientX, e.clientY);
+        }, { passive: true });
+        document.addEventListener('pointerdown', function (e) {
+          lastPointerType = e.pointerType || 'mouse';
+          point(e.clientX, e.clientY);
+        }, { passive: true });
+        document.addEventListener('pointerup', release);
+        document.addEventListener('pointercancel', release);
+        document.addEventListener('pointerleave', release);
+      } else {
+        document.addEventListener('mousemove', function (e) {
+          point(e.clientX, e.clientY);
+        }, { passive: true });
+        document.addEventListener('mouseleave', release);
+        document.addEventListener('touchstart', function (e) {
+          var t = e.touches[0]; if (t) point(t.clientX, t.clientY);
+        }, { passive: true });
+        document.addEventListener('touchmove', function (e) {
+          var t = e.touches[0]; if (t) point(t.clientX, t.clientY);
+        }, { passive: true });
+        document.addEventListener('touchend', release, { passive: true });
+        document.addEventListener('touchcancel', release, { passive: true });
+      }
 
       document.addEventListener('visibilitychange', function () {
-        running = !document.hidden;
-        if (running) requestAnimationFrame(tick);
+        if (document.hidden) setActive(false);
       });
 
-      function tick(now) {
-        if (!running) return;
-        ctx.clearRect(0, 0, w, h);
+      function tick() {
+        if (primed) {
+          // Smooth follow (lerp). Snap final position to grid for crisp pixel feel.
+          x += (tx - x) * FOLLOW;
+          y += (ty - y) * FOLLOW;
+          var size = lensSize();
+          var sx = snap(x), sy = snap(y);
+          lens.style.transform = 'translate3d(' + (sx - size / 2) + 'px,' + (sy - size / 2) + 'px,0)';
 
-        // Rings (touch pulse)
-        var aliveRings = [];
-        for (var r = 0; r < rings.length; r++) {
-          var ring = rings[r];
-          var age = (now - ring.born) / 600;
-          if (age >= 1) continue;
-          var radius = 6 + age * 60;
-          var alpha = (1 - age) * 0.55;
-          ctx.globalAlpha = alpha;
-          ctx.strokeStyle = ACCENT;
-          ctx.lineWidth = 1;
-          // Brutalist square ring instead of circle
-          ctx.strokeRect(
-            (ring.x - radius) | 0,
-            (ring.y - radius) | 0,
-            (radius * 2) | 0,
-            (radius * 2) | 0
-          );
-          aliveRings.push(ring);
-        }
-        rings = aliveRings;
-        ctx.globalAlpha = 1;
-
-        // Particles
-        var alive = [];
-        for (var i = 0; i < particles.length; i++) {
-          var p = particles[i];
-          p.x += p.vx;
-          p.y += p.vy;
-          p.vy += 0.06;
-          p.vx *= 0.97;
-          p.vy *= 0.99;
-          if (now - p.stepStart >= STEP_MS) {
-            p.stepIdx++;
-            p.stepStart = now;
+          if (active) {
+            var dx = sx - lastDropX, dy = sy - lastDropY;
+            if (dx * dx + dy * dy >= DROP_DIST * DROP_DIST) {
+              dropChip(sx, sy);
+              lastDropX = sx; lastDropY = sy;
+            }
           }
-          if (p.stepIdx >= SIZES.length) continue;
-          var size = SIZES[p.stepIdx];
-          ctx.fillStyle = p.color;
-          ctx.fillRect(snap(p.x) | 0, snap(p.y) | 0, size, size);
-          alive.push(p);
         }
-        particles = alive;
         requestAnimationFrame(tick);
       }
       requestAnimationFrame(tick);
